@@ -223,7 +223,9 @@ cat > "$CONFIG_FILE" <<CONF
     "slack": {
       "enabled": true,
       "appToken": "${SLACK_APP_TOKEN}",
-      "botToken": "${SLACK_BOT_TOKEN}"
+      "botToken": "${SLACK_BOT_TOKEN}",
+      "dmPolicy": "open",
+      "allowFrom": ["*"]
     }
   },
   "skills": {
