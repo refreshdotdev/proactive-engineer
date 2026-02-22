@@ -125,58 +125,79 @@ openclaw gateway restart
 
 You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
 
-1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App** → **From scratch**
-2. Give it a name (e.g. "Proactive Engineer") and select your workspace
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App** → **From an app manifest**
+2. Select your workspace
+3. Paste this manifest (sets up all permissions, events, and socket mode automatically):
 
-**Enable Socket Mode:**
+```json
+{
+  "display_information": {
+    "name": "Proactive Engineer",
+    "description": "An AI agent that ships while you sleep"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "Proactive Engineer",
+      "always_online": true
+    },
+    "app_home": {
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    }
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "app_mentions:read",
+        "channels:history",
+        "channels:read",
+        "channels:manage",
+        "groups:history",
+        "groups:read",
+        "chat:write",
+        "im:history",
+        "im:read",
+        "im:write",
+        "reactions:read",
+        "reactions:write",
+        "pins:read",
+        "pins:write",
+        "users:read",
+        "emoji:read",
+        "files:write"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "bot_events": [
+        "message.channels",
+        "message.groups",
+        "message.im",
+        "app_mention",
+        "reaction_added",
+        "member_joined_channel"
+      ]
+    },
+    "socket_mode_enabled": true,
+    "org_deploy_enabled": false
+  }
+}
+```
 
-3. Go to **Socket Mode** (left sidebar) and toggle it **on**
-4. Go to **Basic Information** → **App-Level Tokens** → **Generate Token and Scopes**
-5. Name it anything, add the scope `connections:write`, click **Generate**
-6. Copy the **App Token** — starts with `xapp-`
+4. Click **Next** → **Create**
 
-**Set Bot Permissions:**
+**Get your two tokens:**
 
-7. Go to **OAuth & Permissions** (left sidebar)
-8. Under **Bot Token Scopes**, add these:
+5. Go to **Basic Information** → **App-Level Tokens** → **Generate Token and Scopes**
+6. Name it anything, add the scope `connections:write`, click **Generate**
+7. Copy the **App Token** — starts with `xapp-`
+8. Go to **Install App** (left sidebar) → **Install to Workspace** → **Allow**
+9. Copy the **Bot User OAuth Token** — starts with `xoxb-`
 
-| Scope | Why |
-| --- | --- |
-| `channels:history` | Read messages in public channels |
-| `channels:read` | List channels |
-| `groups:history` | Read messages in private channels |
-| `groups:read` | List private channels |
-| `chat:write` | Send messages |
-| `im:history` | Read DMs |
-| `im:read` | List DMs |
-| `im:write` | Open DMs |
-| `reactions:read` | Read reactions |
-| `reactions:write` | Add reactions |
-| `pins:read` | Read pinned messages |
-| `pins:write` | Pin messages |
-| `users:read` | Look up users |
-| `emoji:read` | Read custom emoji |
-| `files:write` | Upload files |
-| `channels:manage` | Create channels (for `#proactive-engineer`) |
+**Invite the bot to your channels:**
 
-**Install and copy token:**
-
-9. Scroll up and click **Install to Workspace** → **Allow**
-10. Copy the **Bot User OAuth Token** — starts with `xoxb-`
-
-**Subscribe to events:**
-
-11. Go to **Event Subscriptions** (left sidebar), toggle **on**
-12. Under **Subscribe to bot events**, add: `message.channels`, `message.groups`, `message.im`, `app_mention`, `reaction_added`, `member_joined_channel`
-13. Click **Save Changes**
-
-**Enable App Home:**
-
-14. Go to **App Home** (left sidebar), enable the **Messages Tab**
-
-**Invite the bot:**
-
-15. In Slack, invite the bot to channels: `/invite @Proactive Engineer`
+10. In Slack, invite the bot: `/invite @Proactive Engineer`
 
 ### GitHub Personal Access Token
 
