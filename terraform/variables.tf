@@ -35,9 +35,29 @@ variable "slack_bot_token" {
 }
 
 variable "github_token" {
-  description = "GitHub Personal Access Token (ghp_...)"
+  description = "GitHub Personal Access Token (ghp_...). Used if GitHub App is not configured."
   type        = string
   sensitive   = true
+  default     = ""
+}
+
+variable "github_app_id" {
+  description = "GitHub App ID (numeric). Used for bot identity on commits/PRs."
+  type        = string
+  default     = ""
+}
+
+variable "github_app_installation_id" {
+  description = "GitHub App Installation ID (numeric)."
+  type        = string
+  default     = ""
+}
+
+variable "github_app_pem" {
+  description = "GitHub App private key PEM contents (multi-line string)."
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 variable "gemini_api_key" {

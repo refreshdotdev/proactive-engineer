@@ -1,0 +1,16 @@
+{
+  "name": "Proactive Engineer",
+  "url": "https://proactive.engineer",
+  "hook_attributes": {
+    "active": false
+  },
+  "redirect_url": "",
+  "public": false,
+  "default_permissions": {
+    "contents": "write",
+    "pull_requests": "write",
+    "issues": "write",
+    "metadata": "read"
+  },
+  "default_events": []
+}

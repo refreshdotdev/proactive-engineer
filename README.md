@@ -315,19 +315,34 @@ You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
 
 10. In Slack, invite the bot: `/invite @Proactive Engineer`
 
-### GitHub Personal Access Token
+### GitHub App (Recommended)
+
+A GitHub App gives the agent its own identity — commits and PRs show as "Proactive Engineer[bot]" instead of your personal account.
+
+1. Go to [github.com/settings/apps](https://github.com/settings/apps) → **New GitHub App**
+2. Fill in the name ("Proactive Engineer") and homepage URL ("https://proactive.engineer")
+3. Uncheck **Active** under Webhook (we don't need webhooks)
+4. Under **Repository permissions**, set:
+   - **Contents**: Read and write
+   - **Pull requests**: Read and write
+   - **Issues**: Read and write
+   - **Metadata**: Read-only (auto-selected)
+5. Click **Create GitHub App**
+6. On the app page, note the **App ID**
+7. Scroll down to **Private keys** → **Generate a private key** → save the `.pem` file
+8. Go to **Install App** (left sidebar) → install it on your account/org → select the repos you want the agent to access
+9. After installing, note the **Installation ID** from the URL: `github.com/settings/installations/INSTALLATION_ID`
+
+You'll need three values: **App ID**, **Installation ID**, and the **path to the .pem file**.
+
+### Alternative: GitHub Personal Access Token
+
+If you prefer simplicity over bot identity (commits will show as your account):
 
 1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
 2. Click **Generate new token** → **Fine-grained token** (recommended) or **Classic**
-3. For classic tokens, select these scopes:
-
-| Scope | Why |
-| --- | --- |
-| `repo` | Full access to repos (clone, branch, PR) |
-
-4. Set an expiration (or no expiration for a persistent agent)
-5. Click **Generate token**
-6. Copy the token — starts with `ghp_`
+3. For classic tokens, select the `repo` scope
+4. Copy the token — starts with `ghp_`
 
 ### Gemini API Key
 
@@ -344,8 +359,16 @@ You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
 | --- | --- | --- |
 | Slack App Token | `xapp-...` | api.slack.com/apps → Socket Mode → App-Level Tokens |
 | Slack Bot Token | `xoxb-...` | api.slack.com/apps → OAuth & Permissions |
-| GitHub Token | `ghp_...` | github.com/settings/tokens |
+| GitHub App ID | numeric | github.com/settings/apps → your app |
+| GitHub Installation ID | numeric | github.com/settings/installations → your app → URL |
+| GitHub Private Key | `.pem` file | github.com/settings/apps → your app → Private keys |
 | Gemini API Key | `AI...` | aistudio.google.com/apikey |
+
+*Or, if using a PAT instead of a GitHub App:*
+
+| Key | Format | Where to get it |
+| --- | --- | --- |
+| GitHub Token | `ghp_...` | github.com/settings/tokens |
 
 ### Optional Environment Variables
 

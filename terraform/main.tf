@@ -72,9 +72,15 @@ resource "aws_instance" "proactive_engineer" {
   }
 
   user_data = templatefile("${path.module}/user-data.sh", {
-    slack_app_token    = var.slack_app_token
-    slack_bot_token    = var.slack_bot_token
-    github_token       = var.github_token
+    slack_app_token              = var.slack_app_token
+    slack_bot_token              = var.slack_bot_token
+    github_token                 = var.github_token
+    github_app_id                = var.github_app_id
+    github_app_installation_id   = var.github_app_installation_id
+    github_app_pem               = var.github_app_pem
+    gemini_api_key               = var.gemini_api_key
+    agent_name                   = var.agent_name
+    agent_display_name           = var.agent_display_name
     gemini_api_key     = var.gemini_api_key
     agent_name         = var.agent_name
     agent_display_name = var.agent_display_name

@@ -152,10 +152,31 @@ You have access to AI API keys (Gemini `gemini-3.1-pro-preview`, etc.) for analy
 
 Required environment variables:
 
-- **GITHUB_TOKEN** — for cloning repos, creating branches, and opening PRs
 - **GEMINI_API_KEY** — for AI-powered analysis and code generation (use model: `gemini-3.1-pro-preview`)
 - **AGENT_NAME** — short identifier for this agent instance (e.g. "backend", "frontend")
 - **AGENT_DISPLAY_NAME** — how this agent appears in Slack (e.g. "PE - Backend"). Pass this as the `username` parameter when sending Slack messages to maintain your identity.
+
+### GitHub Authentication
+
+You'll have either a GitHub App or a Personal Access Token configured:
+
+**If using a GitHub App** (preferred — commits show as "Proactive Engineer[bot]"):
+- **GITHUB_APP_ID**, **GITHUB_APP_INSTALLATION_ID**, **GITHUB_APP_PEM_PATH** are set in your environment
+- Before any git push or PR operation, refresh your token:
+  ```bash
+  export GITHUB_TOKEN=$(~/.proactive-engineer/scripts/refresh-github-token.sh)
+  ```
+- Also set the git identity:
+  ```bash
+  export GIT_AUTHOR_NAME="Proactive Engineer"
+  export GIT_AUTHOR_EMAIL="proactive-engineer[bot]@users.noreply.github.com"
+  export GIT_COMMITTER_NAME="Proactive Engineer"
+  export GIT_COMMITTER_EMAIL="proactive-engineer[bot]@users.noreply.github.com"
+  ```
+- Tokens expire every hour, so always refresh before git operations.
+
+**If using a Personal Access Token** (simpler, commits show as the token owner):
+- **GITHUB_TOKEN** is set directly in your environment. No refresh needed.
 
 ## Philosophy
 

@@ -141,13 +141,50 @@ prompt_key "SLACK_BOT_TOKEN" \
   "Slack Bot Token" \
   "Starts with xoxb-... — api.slack.com/apps → OAuth & Permissions"
 
-prompt_key "GITHUB_TOKEN" \
-  "GitHub Personal Access Token" \
-  "Starts with ghp_... — github.com/settings/tokens (needs repo scope)"
+# GitHub: prefer App (bot identity) over PAT
+USE_GITHUB_APP=""
+if [ -n "${GITHUB_APP_ID:-}" ] && [ -n "${GITHUB_APP_INSTALLATION_ID:-}" ] && [ -n "${GITHUB_APP_PEM_PATH:-}" ]; then
+  USE_GITHUB_APP="yes"
+  ok "GitHub App: configured via environment"
+elif [ -n "${GITHUB_TOKEN:-}" ]; then
+  ok "GitHub Token: set via environment (PAT fallback)"
+else
+  echo ""
+  echo -e "  ${CYAN}GitHub Authentication${NC}"
+  echo -e "  ${DIM}A GitHub App gives the agent its own identity (commits show as 'Proactive Engineer[bot]').${NC}"
+  echo -e "  ${DIM}A Personal Access Token is simpler but commits show as your account.${NC}"
+  echo -n "  Use GitHub App? [Y/n] > "
+  read -r gh_choice
+  if [[ ! "$gh_choice" =~ ^[Nn] ]]; then
+    USE_GITHUB_APP="yes"
+    prompt_key "GITHUB_APP_ID" \
+      "GitHub App ID" \
+      "From github.com/settings/apps → your app → App ID"
+    prompt_key "GITHUB_APP_INSTALLATION_ID" \
+      "GitHub App Installation ID" \
+      "From github.com/settings/installations → click your app → ID in the URL"
+    prompt_key "GITHUB_APP_PEM_PATH" \
+      "Path to Private Key (.pem file)" \
+      "Downloaded when you created the app. E.g. ~/proactive-engineer.pem"
+  else
+    prompt_key "GITHUB_TOKEN" \
+      "GitHub Personal Access Token" \
+      "Starts with ghp_... — github.com/settings/tokens (needs repo scope)"
+  fi
+fi
 
 prompt_key "GEMINI_API_KEY" \
   "Google Gemini API Key" \
   "From aistudio.google.com/apikey"
+
+# If using GitHub App, copy the private key and generate initial token
+if [ "$USE_GITHUB_APP" = "yes" ]; then
+  PEM_DEST="$INSTALL_DIR/github-app.pem"
+  mkdir -p "$INSTALL_DIR"
+  cp "$GITHUB_APP_PEM_PATH" "$PEM_DEST" 2>/dev/null || true
+  chmod 600 "$PEM_DEST" 2>/dev/null || true
+  export GITHUB_APP_PEM_PATH="$PEM_DEST"
+fi
 
 echo ""
 ok "All keys collected."
@@ -262,13 +299,22 @@ if [ -n "$TAILSCALE_IP" ]; then
     "tailscale": { "mode": "serve" }'
 fi
 
+# Determine GitHub env block
+if [ "$USE_GITHUB_APP" = "yes" ]; then
+  GITHUB_ENV_BLOCK="\"GITHUB_APP_ID\": \"${GITHUB_APP_ID}\",
+    \"GITHUB_APP_INSTALLATION_ID\": \"${GITHUB_APP_INSTALLATION_ID}\",
+    \"GITHUB_APP_PEM_PATH\": \"${GITHUB_APP_PEM_PATH}\""
+else
+  GITHUB_ENV_BLOCK="\"GITHUB_TOKEN\": \"${GITHUB_TOKEN}\""
+fi
+
 cat > "$CONFIG_FILE" <<CONF
 {
   "gateway": {
     "port": ${AGENT_PORT}${GATEWAY_EXTRA}
   },
   "env": {
-    "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+    ${GITHUB_ENV_BLOCK},
     "GEMINI_API_KEY": "${GEMINI_API_KEY}"
   },
   "agents": {
@@ -295,8 +341,6 @@ cat > "$CONFIG_FILE" <<CONF
       "proactive-engineer": {
         "enabled": true,
         "env": {
-          "GITHUB_TOKEN": "${GITHUB_TOKEN}",
-          "GEMINI_API_KEY": "${GEMINI_API_KEY}",
           "AGENT_NAME": "${AGENT_NAME}",
           "AGENT_DISPLAY_NAME": "${AGENT_DISPLAY_NAME}"
         }

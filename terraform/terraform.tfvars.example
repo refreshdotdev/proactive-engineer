@@ -7,8 +7,17 @@ aws_region = "us-east-1"
 slack_app_token = "xapp-..."
 slack_bot_token = "xoxb-..."
 
-# GitHub PAT (from github.com/settings/tokens)
-github_token = "ghp_..."
+# GitHub App (recommended — commits show as "Proactive Engineer[bot]")
+github_app_id              = "123456"
+github_app_installation_id = "789"
+github_app_pem             = <<-PEM
+-----BEGIN RSA PRIVATE KEY-----
+paste your .pem contents here
+-----END RSA PRIVATE KEY-----
+PEM
+
+# OR: GitHub PAT (simpler, commits show as your account)
+# github_token = "ghp_..."
 
 # Gemini API key (from aistudio.google.com/apikey)
 gemini_api_key = "..."
