@@ -1,6 +1,6 @@
 # proactive.engineer
 
-An open-source AI agent that lives on a VM alongside your team. It connects to your Slack and GitHub, reasons about everything it could do given the current state of your project, and decides what's actually worth doing next — then ships it as a PR for you to review.
+An open-source AI teammate that quietly handles the work your team knows is important but never gets to. It connects to your Slack and GitHub, figures out what's worth doing, and opens PRs for your team to review. You stay in control — it just makes sure the backlog of "we should really do that" actually gets done.
 
 **[proactive.engineer](https://proactive.engineer)** · **[GitHub](https://github.com/refreshdotdev/proactive-engineer)**
 
@@ -38,19 +38,21 @@ After that, walk away. The agent is alive.
 
 ## What It Does
 
-Proactive Engineer wakes up every **30 minutes** via OpenClaw's heartbeat system and runs a continuous loop:
+Every 30 minutes, Proactive Engineer checks in on your project and asks itself: *what's the most useful thing I could do right now?*
 
-1. **Scan** — Reads across all your Slack channels and GitHub repos to understand what's happening
-2. **Reason** — Generates a list of everything it *could* do: bug fixes, refactors, missing tests, documentation gaps, dependency updates, CI improvements, new project scaffolding
-3. **Prioritize** — Ranks by impact, urgency, and confidence. Picks the thing that's actually worth doing right now
-4. **Execute** — Does the work. Real code, real branches, real PRs
-5. **Communicate** — Posts a concise summary to the relevant Slack channel under its configured display name
+1. **Scan** — Reads across your Slack channels and GitHub repos to understand what's going on
+2. **Reason** — Thinks through what it could help with: bug fixes, missing tests, documentation, dependency updates, CI improvements, scaffolding ideas people have been talking about
+3. **Prioritize** — Picks the thing that's actually worth doing — high impact, low risk, not something someone else is already working on
+4. **Execute** — Does the work. Opens a branch, writes the code, submits a PR
+5. **Communicate** — Posts a short summary in Slack so your team knows what happened
 
 ```
 ⚡ [proactive-engineer] Added missing error handling to /api/payments
 PR: github.com/yourco/backend/pull/247
 Why: Saw 3 unhandled promise rejections in #alerts yesterday.
 ```
+
+Your team reviews and merges (or closes) the PR. Over time, the agent learns what your team values and adjusts.
 
 ---
 
@@ -66,7 +68,7 @@ Every day at **9:00 AM** (via a cron job registered during install), the agent p
 
 ## How It Learns
 
-The agent uses a built-in memory system. It remembers what kinds of PRs your team merges vs closes, what feedback you give it, who owns what areas of the codebase, and what patterns keep coming up. It gets better over time.
+The agent remembers how your team works. It tracks which PRs get merged vs closed, what feedback people give, who owns what parts of the codebase, and what kinds of problems keep coming up. The more you work alongside it, the more useful it gets.
 
 ---
 
@@ -108,9 +110,11 @@ openclaw --profile pe-infra dashboard
 
 ## Guardrails
 
+The agent is designed to be helpful without getting in the way:
+
 - **$50/day API budget** — pauses and asks in Slack before exceeding
-- **Never pushes to main** — always works on branches and opens PRs
-- **Never deploys** — its job ends at the PR
+- **Never pushes to main** — always works on branches and opens PRs for human review
+- **Never deploys** — its job ends at the PR. Your team decides what ships.
 - **No large refactors without buy-in** — opens issues and asks first
 - **Doesn't touch active work** — checks recent commits and open PRs before starting
 
@@ -286,7 +290,9 @@ You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
 
 ## Engineering Standard
 
-The agent operates against a defined [engineering competency framework](skills/proactive-engineer/competencies/software_engineer_competency.md) that sets the bar for what "good" looks like. It holds itself to the behavioral profile described there: act before being asked, identify systemic issues, reduce entropy, make others more effective.
+Proactive Engineer doesn't just do random chores. It operates against a defined [engineering competency framework](skills/proactive-engineer/competencies/software_engineer_competency.md) that covers everything from code quality and systems architecture to ownership, strategic judgment, and cross-team influence. The agent reads this competency framework on every cycle and holds itself to the behavioral profile described there: act before being asked, identify systemic issues, optimize for organizational health, reduce entropy across systems, and make the people around it more effective.
+
+You can customize this framework to match your team's values by editing the competency file.
 
 ---
 
