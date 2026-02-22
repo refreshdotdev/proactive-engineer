@@ -8,7 +8,7 @@
   <em>An AI that ships while you sleep</em>
 </p>
 
-An open-source AI teammate that quietly handles the work your team knows is important but never gets to. It connects to your Slack and GitHub, figures out what's worth doing, and opens PRs for your team to review. You stay in control — it just makes sure the backlog of "we should really do that" actually gets done.
+An open-source AI teammate that quietly handles the work your team knows is important but never gets to. It connects to your Slack and GitHub, figures out what's worth doing and opens PRs for your team to review. You stay in control — it just makes sure the backlog of "we should really do that" actually gets done.
 
 **[proactive.engineer](https://proactive.engineer)** · **[GitHub](https://github.com/refreshdotdev/proactive-engineer)**
 
