@@ -42,7 +42,7 @@ response=$(curl -sf --request POST \
   --header "X-GitHub-Api-Version: 2022-11-28" \
   --url "https://api.github.com/app/installations/${GITHUB_APP_INSTALLATION_ID}/access_tokens")
 
-token=$(echo "$response" | grep -o '"token":"[^"]*"' | head -1 | cut -d'"' -f4)
+token=$(echo "$response" | grep -o '"token"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"token"[[:space:]]*:[[:space:]]*"//' | sed 's/"//')
 
 if [ -z "$token" ]; then
   echo "Failed to get installation token. Response:" >&2
