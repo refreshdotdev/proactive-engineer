@@ -177,15 +177,6 @@ prompt_key "GEMINI_API_KEY" \
   "Google Gemini API Key" \
   "From aistudio.google.com/apikey"
 
-# If using GitHub App, copy the private key and generate initial token
-if [ "$USE_GITHUB_APP" = "yes" ]; then
-  PEM_DEST="$INSTALL_DIR/github-app.pem"
-  mkdir -p "$INSTALL_DIR"
-  cp "$GITHUB_APP_PEM_PATH" "$PEM_DEST" 2>/dev/null || true
-  chmod 600 "$PEM_DEST" 2>/dev/null || true
-  export GITHUB_APP_PEM_PATH="$PEM_DEST"
-fi
-
 echo ""
 ok "All keys collected."
 
@@ -220,6 +211,15 @@ else
   rm -rf "$INSTALL_DIR"
   git clone --depth 1 --branch "$BRANCH" "https://github.com/$REPO.git" "$INSTALL_DIR"
   ok "Downloaded to $INSTALL_DIR"
+fi
+
+# Copy GitHub App private key if using App auth
+if [ "$USE_GITHUB_APP" = "yes" ] && [ -n "${GITHUB_APP_PEM_PATH:-}" ]; then
+  PEM_DEST="$INSTALL_DIR/github-app.pem"
+  cp "$GITHUB_APP_PEM_PATH" "$PEM_DEST" 2>/dev/null || true
+  chmod 600 "$PEM_DEST" 2>/dev/null || true
+  export GITHUB_APP_PEM_PATH="$PEM_DEST"
+  ok "Private key copied."
 fi
 
 # ── Symlink skill (shared across all agents) ───────────────────
@@ -311,6 +311,7 @@ fi
 cat > "$CONFIG_FILE" <<CONF
 {
   "gateway": {
+    "mode": "local",
     "port": ${AGENT_PORT}${GATEWAY_EXTRA}
   },
   "env": {
