@@ -59,7 +59,7 @@ resource "aws_key_pair" "proactive_engineer" {
 }
 
 resource "aws_instance" "proactive_engineer" {
-  ami                         = data.aws_ami.ubuntu.id
+  ami                         = var.ami_id != "" ? var.ami_id : data.aws_ami.ubuntu.id
   instance_type               = var.instance_type
   vpc_security_group_ids      = [aws_security_group.proactive_engineer.id]
   key_name                    = var.ssh_public_key != "" ? aws_key_pair.proactive_engineer[0].key_name : null

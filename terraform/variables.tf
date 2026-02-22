@@ -4,6 +4,12 @@ variable "aws_region" {
   default     = "us-east-1"
 }
 
+variable "ami_id" {
+  description = "Pre-built Proactive Engineer AMI ID (from packer build). Leave empty to use stock Ubuntu."
+  type        = string
+  default     = "ami-0e42d1722f689a03f"
+}
+
 variable "instance_type" {
   description = "EC2 instance type"
   type        = string
