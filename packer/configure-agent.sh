@@ -69,11 +69,14 @@ CONF
 openclaw --profile "$PROFILE_NAME" gateway install 2>/dev/null || true
 sudo loginctl enable-linger "$(whoami)" 2>/dev/null || true
 
-if ! sudo tailscale status >/dev/null 2>&1; then
-  echo "Run 'sudo tailscale up' to connect Tailscale for dashboard access."
+if systemctl --user is-system-running >/dev/null 2>&1; then
+  systemctl --user enable "openclaw-gateway-$PROFILE_NAME" 2>/dev/null || true
+  systemctl --user start "openclaw-gateway-$PROFILE_NAME" 2>/dev/null || true
+else
+  nohup bash -c "export PATH=\"$HOME/.npm-global/bin:$HOME/.local/bin:\$PATH\" && openclaw --profile $PROFILE_NAME gateway --port $PORT" > /tmp/openclaw-$PROFILE_NAME.log 2>&1 &
+  disown
+  CRON_CMD="@reboot export PATH=\"$HOME/.npm-global/bin:$HOME/.local/bin:\$PATH\" && openclaw --profile $PROFILE_NAME gateway --port $PORT >> /tmp/openclaw-$PROFILE_NAME.log 2>&1"
+  (crontab -l 2>/dev/null | grep -v "openclaw.*$PROFILE_NAME"; echo "$CRON_CMD") | crontab -
 fi
-
-systemctl --user enable "openclaw-gateway-$PROFILE_NAME" 2>/dev/null || true
-systemctl --user start "openclaw-gateway-$PROFILE_NAME" 2>/dev/null || true
 
 echo "Agent '$AGENT_NAME' ($AGENT_DISPLAY_NAME) configured and started on port $PORT."

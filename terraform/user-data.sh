@@ -21,16 +21,15 @@ loginctl enable-linger "$SETUP_USER" 2>/dev/null || true
 if [ -f "$SETUP_HOME/configure-agent.sh" ]; then
   # Pre-built AMI: just run the configure script
   echo "Pre-built AMI detected. Running configure-agent.sh..."
-  sudo -u "$SETUP_USER" -i bash -c "
-    export SLACK_APP_TOKEN='$SLACK_APP_TOKEN'
-    export SLACK_BOT_TOKEN='$SLACK_BOT_TOKEN'
-    export GITHUB_TOKEN='$GITHUB_TOKEN'
-    export GEMINI_API_KEY='$GEMINI_API_KEY'
-    export AGENT_NAME='$AGENT_NAME'
-    export AGENT_DISPLAY_NAME='$AGENT_DISPLAY_NAME'
-    export PATH=\"\$HOME/.npm-global/bin:\$HOME/.local/bin:\$PATH\"
-    bash \$HOME/configure-agent.sh
-  "
+  sudo -u "$SETUP_USER" \
+    SLACK_APP_TOKEN="$SLACK_APP_TOKEN" \
+    SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN" \
+    GITHUB_TOKEN="$GITHUB_TOKEN" \
+    GEMINI_API_KEY="$GEMINI_API_KEY" \
+    AGENT_NAME="$AGENT_NAME" \
+    AGENT_DISPLAY_NAME="$AGENT_DISPLAY_NAME" \
+    PATH="/home/ubuntu/.npm-global/bin:/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin" \
+    bash /home/ubuntu/configure-agent.sh
 else
   # Stock Ubuntu: full install
   echo "Stock Ubuntu detected. Running full install..."
