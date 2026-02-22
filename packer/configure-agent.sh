@@ -53,7 +53,8 @@ cat > "$CONFIG_DIR/openclaw.json" << CONF
   "agents": {
     "defaults": {
       "workspace": "$WORKSPACE_DIR",
-      "heartbeat": { "every": "30m" }
+      "heartbeat": { "every": "30m" },
+      "model": { "primary": "google/gemini-3.1-pro-preview" }
     }
   },
   "channels": {

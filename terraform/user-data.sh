@@ -87,7 +87,7 @@ else
 {
   \"gateway\": { \"mode\": \"local\", \"port\": 18789, \"auth\": { \"allowTailscale\": true }, \"tailscale\": { \"mode\": \"serve\" } },
   \"env\": { \"GITHUB_TOKEN\": \"\$GITHUB_TOKEN\", \"GEMINI_API_KEY\": \"\$GEMINI_API_KEY\" },
-  \"agents\": { \"defaults\": { \"workspace\": \"\$WORKSPACE_DIR\", \"heartbeat\": { \"every\": \"30m\" } } },
+  \"agents\": { \"defaults\": { \"workspace\": \"\$WORKSPACE_DIR\", \"heartbeat\": { \"every\": \"30m\" }, \"model\": { \"primary\": \"google/gemini-3.1-pro-preview\" } } },
   \"channels\": { \"slack\": { \"enabled\": true, \"appToken\": \"\$SLACK_APP_TOKEN\", \"botToken\": \"\$SLACK_BOT_TOKEN\", \"groupPolicy\": \"open\", \"channels\": { \"*\": { \"requireMention\": true } }, \"dmPolicy\": \"open\", \"allowFrom\": [\"*\"] } },
   \"skills\": { \"entries\": { \"proactive-engineer\": { \"enabled\": true, \"env\": { \"AGENT_NAME\": \"\$AGENT_NAME\", \"AGENT_DISPLAY_NAME\": \"\$AGENT_DISPLAY_NAME\" } } } }
 }

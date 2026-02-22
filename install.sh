@@ -322,6 +322,9 @@ cat > "$CONFIG_FILE" <<CONF
       "workspace": "${WORKSPACE_DIR}",
       "heartbeat": {
         "every": "30m"
+      },
+      "model": {
+        "primary": "google/gemini-3.1-pro-preview"
       }
     }
   },
