@@ -179,8 +179,8 @@ prompt_key "GEMINI_API_KEY" \
 
 # If using GitHub App, copy the private key and generate initial token
 if [ "$USE_GITHUB_APP" = "yes" ]; then
-  PEM_DEST="$INSTALL_DIR/github-app.pem"
-  mkdir -p "$INSTALL_DIR"
+  mkdir -p "$CONFIG_DIR"
+  PEM_DEST="$CONFIG_DIR/github-app.pem"
   cp "$GITHUB_APP_PEM_PATH" "$PEM_DEST" 2>/dev/null || true
   chmod 600 "$PEM_DEST" 2>/dev/null || true
   export GITHUB_APP_PEM_PATH="$PEM_DEST"
