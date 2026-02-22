@@ -198,7 +198,10 @@ ok "Skill installed."
 
 info "Setting up workspace for agent '${AGENT_NAME}'..."
 mkdir -p "$WORKSPACE_DIR"
-ln -sf "$INSTALL_DIR/skills/proactive-engineer/HEARTBEAT.md" "$WORKSPACE_DIR/HEARTBEAT.md"
+for f in HEARTBEAT.md IDENTITY.md SOUL.md AGENTS.md; do
+  ln -sf "$INSTALL_DIR/skills/proactive-engineer/workspace/$f" "$WORKSPACE_DIR/$f" 2>/dev/null || \
+  ln -sf "$INSTALL_DIR/skills/proactive-engineer/$f" "$WORKSPACE_DIR/$f" 2>/dev/null || true
+done
 ok "Workspace ready at $WORKSPACE_DIR"
 
 # ── Write config ───────────────────────────────────────────────
