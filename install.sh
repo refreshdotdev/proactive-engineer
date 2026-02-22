@@ -266,6 +266,8 @@ cat > "$CONFIG_FILE" <<CONF
       "enabled": true,
       "appToken": "${SLACK_APP_TOKEN}",
       "botToken": "${SLACK_BOT_TOKEN}",
+      "groupPolicy": "open",
+      "channels": { "*": { "requireMention": true } },
       "dmPolicy": "open",
       "allowFrom": ["*"]
     }
