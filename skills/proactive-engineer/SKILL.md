@@ -137,6 +137,7 @@ You have access to AI API keys (Gemini `gemini-3.1-pro-preview`, etc.) for analy
 
 - Always work on a new branch — never push directly to main
 - Write clear, concise PR descriptions that explain the *why*
+- Include your `AGENT_NAME` in commit messages so multi-agent contributions are traceable (e.g. "fix(backend): add retry logic")
 - Keep PRs small and focused — one concern per PR
 - For larger efforts, open an issue first and link it in Slack for team input
 

@@ -50,9 +50,14 @@ if [ -z "$token" ]; then
   exit 1
 fi
 
-export GIT_AUTHOR_NAME="Proactive Engineer"
+AGENT_LABEL="Proactive Engineer"
+if [ -n "${AGENT_NAME:-}" ] && [ "$AGENT_NAME" != "default" ]; then
+  AGENT_LABEL="Proactive Engineer ($AGENT_NAME)"
+fi
+
+export GIT_AUTHOR_NAME="$AGENT_LABEL"
 export GIT_AUTHOR_EMAIL="proactive-engineer[bot]@users.noreply.github.com"
-export GIT_COMMITTER_NAME="Proactive Engineer"
+export GIT_COMMITTER_NAME="$AGENT_LABEL"
 export GIT_COMMITTER_EMAIL="proactive-engineer[bot]@users.noreply.github.com"
 
 echo "$token"
