@@ -25,7 +25,13 @@ cat > "$CONFIG_DIR/openclaw.json" << CONF
 {
   "gateway": {
     "mode": "local",
-    "port": $PORT
+    "port": $PORT,
+    "auth": {
+      "allowTailscale": true
+    },
+    "tailscale": {
+      "mode": "serve"
+    }
   },
   "env": {
     "GITHUB_TOKEN": "$GITHUB_TOKEN",
@@ -62,6 +68,11 @@ CONF
 
 openclaw --profile "$PROFILE_NAME" gateway install 2>/dev/null || true
 sudo loginctl enable-linger "$(whoami)" 2>/dev/null || true
+
+if ! sudo tailscale status >/dev/null 2>&1; then
+  echo "Run 'sudo tailscale up' to connect Tailscale for dashboard access."
+fi
+
 systemctl --user enable "openclaw-gateway-$PROFILE_NAME" 2>/dev/null || true
 systemctl --user start "openclaw-gateway-$PROFILE_NAME" 2>/dev/null || true
 

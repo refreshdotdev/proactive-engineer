@@ -4,6 +4,8 @@ set -euo pipefail
 sudo apt-get update -y
 sudo apt-get install -y curl git
 
+curl -fsSL https://tailscale.com/install.sh | sh
+
 curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard
 echo 'export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"' >> ~/.bashrc
 export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH"

@@ -194,6 +194,35 @@ mkdir -p "$(dirname "$SKILL_DIR")"
 ln -sf "$INSTALL_DIR/skills/proactive-engineer" "$SKILL_DIR"
 ok "Skill installed."
 
+# ── Install Tailscale ──────────────────────────────────────────
+
+echo ""
+echo -e "${YELLOW}━━━ Setting Up Dashboard Access (Tailscale) ━━━━━${NC}"
+echo ""
+
+if ! command -v tailscale >/dev/null 2>&1; then
+  info "Installing Tailscale..."
+  curl -fsSL https://tailscale.com/install.sh | sh
+  ok "Tailscale installed."
+else
+  ok "Tailscale already installed."
+fi
+
+if ! sudo tailscale status >/dev/null 2>&1; then
+  info "Starting Tailscale — follow the link below to authenticate:"
+  echo ""
+  sudo tailscale up
+  echo ""
+  ok "Tailscale connected."
+else
+  ok "Tailscale already connected."
+fi
+
+TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "")
+if [ -n "$TAILSCALE_IP" ]; then
+  ok "Tailscale IP: $TAILSCALE_IP"
+fi
+
 # ── Set up agent workspace + heartbeat ─────────────────────────
 
 info "Setting up workspace for agent '${AGENT_NAME}'..."
@@ -212,7 +241,17 @@ info "Writing configuration for agent '${AGENT_NAME}'..."
 cat > "$CONFIG_FILE" <<CONF
 {
   "gateway": {
-    "port": ${AGENT_PORT}
+    "port": ${AGENT_PORT},
+    "auth": {
+      "allowTailscale": true
+    },
+    "tailscale": {
+      "mode": "serve"
+    }
+  },
+  "env": {
+    "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+    "GEMINI_API_KEY": "${GEMINI_API_KEY}"
   },
   "agents": {
     "defaults": {
@@ -297,6 +336,9 @@ echo -e "  Profile:       ${PROFILE_NAME}"
 echo -e "  Port:          ${AGENT_PORT}"
 echo -e "  Heartbeat:     every 30 minutes"
 echo -e "  Daily digest:  9:00 AM"
+if [ -n "$TAILSCALE_IP" ]; then
+echo -e "  Dashboard:     ${CYAN}http://${TAILSCALE_IP}:${AGENT_PORT}${NC}"
+fi
 echo ""
 echo -e "  ${CYAN}Useful commands:${NC}"
 echo ""

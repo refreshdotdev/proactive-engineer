@@ -46,11 +46,9 @@ After that, walk away. The agent is alive.
 
 ## Deploy to AWS (Recommended)
 
-The best way to run Proactive Engineer is on a dedicated VM that stays on 24/7. We provide Terraform configs and a pre-built AMI so setup takes seconds, not minutes.
+The best way to run Proactive Engineer is on a dedicated VM that stays on 24/7. We provide Terraform configs and a pre-built AMI so the agent is running within a minute of `terraform apply`.
 
-### Quick Start with Pre-built AMI
-
-The pre-built AMI has Node.js, OpenClaw, and the proactive-engineer skill already installed. You just provide your API keys.
+### One-Shot Deploy
 
 ```bash
 cd terraform/
@@ -64,20 +62,21 @@ terraform init
 terraform apply
 ```
 
-After `terraform apply` finishes (~30 seconds), SSH in and run the configure script:
+That's it. Terraform provisions the VM from a pre-built AMI (Node.js, OpenClaw, and the skill are already installed), injects your API keys, and starts the agent automatically. No SSH required.
+
+After about 30 seconds, the agent connects to Slack and starts its first heartbeat cycle.
+
+To check on it:
 
 ```bash
-ssh ubuntu@<public-ip>
+# SSH in (if you provided an SSH key)
+ssh ubuntu@$(terraform output -raw public_ip)
 
-# On the VM:
-SLACK_APP_TOKEN=xapp-... \
-SLACK_BOT_TOKEN=xoxb-... \
-GITHUB_TOKEN=ghp_... \
-GEMINI_API_KEY=... \
-  ~/configure-agent.sh
+# Check the agent
+export PATH="$HOME/.npm-global/bin:$PATH"
+openclaw --profile pe-default gateway status
+journalctl --user -u openclaw-gateway-pe-default -f
 ```
-
-The agent starts immediately as a systemd service.
 
 ### Build Your Own AMI
 
@@ -94,7 +93,14 @@ packer build \
   proactive-engineer.pkr.hcl
 ```
 
-Then update `terraform/main.tf` to use your custom AMI ID.
+Then set `ami_id` in your `terraform.tfvars` to the new AMI ID.
+
+### Tear Down
+
+```bash
+cd terraform/
+terraform destroy
+```
 
 ---
 
