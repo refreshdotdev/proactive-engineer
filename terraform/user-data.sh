@@ -59,43 +59,15 @@ else
     export SLACK_APP_TOKEN='$SLACK_APP_TOKEN'
     export SLACK_BOT_TOKEN='$SLACK_BOT_TOKEN'
     export GITHUB_TOKEN='$GITHUB_TOKEN'
+    export GITHUB_APP_ID='$GITHUB_APP_ID'
+    export GITHUB_APP_INSTALLATION_ID='$GITHUB_APP_INSTALLATION_ID'
+    export GITHUB_APP_PEM_PATH='$GITHUB_APP_PEM_PATH'
     export GEMINI_API_KEY='$GEMINI_API_KEY'
     export AGENT_NAME='$AGENT_NAME'
     export AGENT_DISPLAY_NAME='$AGENT_DISPLAY_NAME'
+    export SETUP_TAILSCALE='y'
 
-    curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard
-    export PATH=\"\$HOME/.npm-global/bin:\$HOME/.local/bin:\$PATH\"
-
-    REPO=refreshdotdev/proactive-engineer
-    INSTALL_DIR=\"\$HOME/.proactive-engineer\"
-    PROFILE_NAME=\"pe-\$AGENT_NAME\"
-    CONFIG_DIR=\"\$HOME/.openclaw-\$PROFILE_NAME\"
-    WORKSPACE_DIR=\"\$HOME/.openclaw/workspace-\$PROFILE_NAME\"
-    SKILL_DIR=\"\$HOME/.openclaw/skills/proactive-engineer\"
-
-    git clone --depth 1 https://github.com/\$REPO.git \"\$INSTALL_DIR\"
-
-    mkdir -p \"\$(dirname \$SKILL_DIR)\"
-    ln -sf \"\$INSTALL_DIR/skills/proactive-engineer\" \"\$SKILL_DIR\"
-
-    mkdir -p \"\$CONFIG_DIR\" \"\$WORKSPACE_DIR\"
-    for f in HEARTBEAT.md IDENTITY.md SOUL.md AGENTS.md; do
-      ln -sf \"\$INSTALL_DIR/skills/proactive-engineer/workspace/\$f\" \"\$WORKSPACE_DIR/\$f\" 2>/dev/null || true
-    done
-
-    cat > \"\$CONFIG_DIR/openclaw.json\" << CONF
-{
-  \"gateway\": { \"mode\": \"local\", \"port\": 18789, \"auth\": { \"allowTailscale\": true }, \"tailscale\": { \"mode\": \"serve\" } },
-  \"env\": { \"GITHUB_TOKEN\": \"\$GITHUB_TOKEN\", \"GEMINI_API_KEY\": \"\$GEMINI_API_KEY\" },
-  \"agents\": { \"defaults\": { \"workspace\": \"\$WORKSPACE_DIR\", \"heartbeat\": { \"every\": \"30m\" }, \"model\": { \"primary\": \"google/gemini-3.1-pro-preview\" } } },
-  \"channels\": { \"slack\": { \"enabled\": true, \"appToken\": \"\$SLACK_APP_TOKEN\", \"botToken\": \"\$SLACK_BOT_TOKEN\", \"groupPolicy\": \"open\", \"channels\": { \"*\": { \"requireMention\": true } }, \"dmPolicy\": \"open\", \"allowFrom\": [\"*\"] } },
-  \"skills\": { \"entries\": { \"proactive-engineer\": { \"enabled\": true, \"env\": { \"AGENT_NAME\": \"\$AGENT_NAME\", \"AGENT_DISPLAY_NAME\": \"\$AGENT_DISPLAY_NAME\" } } } }
-}
-CONF
-
-    openclaw --profile \"\$PROFILE_NAME\" gateway install 2>/dev/null || true
-    systemctl --user enable \"openclaw-gateway-\$PROFILE_NAME\" 2>/dev/null || true
-    systemctl --user start \"openclaw-gateway-\$PROFILE_NAME\" 2>/dev/null || true
+    curl -fsSL https://raw.githubusercontent.com/refreshdotdev/proactive-engineer/main/install.sh | bash
   "
 fi
 

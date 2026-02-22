@@ -10,7 +10,7 @@ set -euo pipefail
 #   GITHUB_APP_PEM_PATH        - Path to the .pem private key file
 #
 # Outputs the token (ghs_...) to stdout.
-# Also exports git author/committer identity for the bot.
+# Also configures global git author/committer identity for the bot.
 
 : "${GITHUB_APP_ID:?Set GITHUB_APP_ID}"
 : "${GITHUB_APP_INSTALLATION_ID:?Set GITHUB_APP_INSTALLATION_ID}"
@@ -55,9 +55,9 @@ if [ -n "${AGENT_NAME:-}" ] && [ "$AGENT_NAME" != "default" ]; then
   AGENT_LABEL="Proactive Engineer ($AGENT_NAME)"
 fi
 
-export GIT_AUTHOR_NAME="$AGENT_LABEL"
-export GIT_AUTHOR_EMAIL="proactive-engineer[bot]@users.noreply.github.com"
-export GIT_COMMITTER_NAME="$AGENT_LABEL"
-export GIT_COMMITTER_EMAIL="proactive-engineer[bot]@users.noreply.github.com"
+if command -v git >/dev/null 2>&1; then
+  git config --global user.name "$AGENT_LABEL"
+  git config --global user.email "proactive-engineer[bot]@users.noreply.github.com"
+fi
 
 echo "$token"

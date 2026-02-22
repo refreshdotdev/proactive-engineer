@@ -165,11 +165,10 @@ You'll have either a GitHub App or a Personal Access Token configured:
 - **GITHUB_APP_ID**, **GITHUB_APP_INSTALLATION_ID**, **GITHUB_APP_PEM_PATH** are set in your environment
 - Before any git push, PR, or `gh` CLI operation, refresh your token and set it for both git and gh:
   ```bash
-  export GITHUB_TOKEN=$(~/.proactive-engineer/scripts/refresh-github-token.sh)
-  export GH_TOKEN="$GITHUB_TOKEN"
-  git config --global user.name "Proactive Engineer"
-  git config --global user.email "proactive-engineer[bot]@users.noreply.github.com"
+  export GH_TOKEN=$(~/.proactive-engineer/scripts/refresh-github-token.sh)
+  export GITHUB_TOKEN="$GH_TOKEN"
   ```
+  *(The script automatically configures your git committer identity.)*
 - You MUST set `GH_TOKEN` so that `gh pr create` and other `gh` commands use the App token instead of your personal auth.
 - Tokens expire every hour, so always refresh before git operations.
 
