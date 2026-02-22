@@ -350,6 +350,43 @@ You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
 
 ---
 
+## Dashboard Access (Tailscale)
+
+The agent runs on a VM, but you can access its web dashboard from any of your devices using [Tailscale](https://tailscale.com/) — a zero-config mesh VPN.
+
+**On the VM:**
+
+1. Install Tailscale:
+   ```bash
+   curl -fsSL https://tailscale.com/install.sh | sh
+   sudo tailscale up
+   ```
+
+2. Add Tailscale config to your agent's `openclaw.json`:
+   ```json
+   {
+     "gateway": {
+       "auth": {
+         "allowTailscale": true
+       },
+       "tailscale": {
+         "mode": "serve"
+       }
+     }
+   }
+   ```
+
+3. Restart the agent:
+   ```bash
+   openclaw --profile pe-<name> gateway restart
+   ```
+
+**On your laptop/phone:**
+
+Install Tailscale, join the same Tailnet, and open the dashboard at `http://<vm-tailscale-hostname>:18789`. No port forwarding, no SSH tunnels — just works from any device on your Tailnet, fully encrypted.
+
+---
+
 ## Engineering Standard
 
 Proactive Engineer doesn't just do random chores. It operates against a defined [engineering competency framework](skills/proactive-engineer/competencies/software_engineer_competency.md) that covers everything from code quality and systems architecture to ownership, strategic judgment, and cross-team influence. The agent reads this competency framework on every cycle and holds itself to the behavioral profile described there: act before being asked, identify systemic issues, optimize for organizational health, reduce entropy across systems, and make the people around it more effective.
