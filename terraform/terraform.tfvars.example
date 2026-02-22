@@ -1,0 +1,21 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# DO NOT commit terraform.tfvars — it contains secrets.
+
+aws_region = "us-east-1"
+
+# Slack tokens (from api.slack.com/apps)
+slack_app_token = "xapp-..."
+slack_bot_token = "xoxb-..."
+
+# GitHub PAT (from github.com/settings/tokens)
+github_token = "ghp_..."
+
+# Gemini API key (from aistudio.google.com/apikey)
+gemini_api_key = "..."
+
+# Agent identity
+agent_name         = "default"
+agent_display_name = "Proactive Engineer"
+
+# Optional: SSH public key for access (cat ~/.ssh/id_ed25519.pub)
+# ssh_public_key = "ssh-ed25519 AAAA..."

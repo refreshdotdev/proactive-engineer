@@ -376,9 +376,23 @@ journalctl --user -u openclaw-gateway-pe-<name> -f # Watch logs
 skills/
   proactive-engineer/
     SKILL.md                              # Agent behavior definition
-    HEARTBEAT.md                          # 30-min scan loop instructions
+    workspace/
+      HEARTBEAT.md                        # 30-min scan loop instructions
+      IDENTITY.md                         # Agent name and vibe
+      SOUL.md                             # Persona, boundaries, tone
+      AGENTS.md                           # Operating instructions
     competencies/
       software_engineer_competency.md     # Engineering standard
+terraform/                                # AWS EC2 deployment
+  main.tf
+  variables.tf
+  outputs.tf
+  user-data.sh
+  terraform.tfvars.example
+packer/                                   # Pre-built AMI
+  proactive-engineer.pkr.hcl
+  provision.sh
+  configure-agent.sh
 install.sh                                # One-command setup (supports named agents)
 TESTING.md                                # How to verify it works
 ```
