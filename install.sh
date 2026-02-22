@@ -219,7 +219,13 @@ if [ "$USE_GITHUB_APP" = "yes" ] && [ -n "${GITHUB_APP_PEM_PATH:-}" ]; then
   cp "$GITHUB_APP_PEM_PATH" "$PEM_DEST" 2>/dev/null || true
   chmod 600 "$PEM_DEST" 2>/dev/null || true
   export GITHUB_APP_PEM_PATH="$PEM_DEST"
-  ok "Private key copied."
+
+  # Configure git credential helper and identity so all git/gh operations
+  # automatically use the App token (prevents accidental personal auth)
+  git config --global credential.helper "$INSTALL_DIR/scripts/bin/git-credential-github-app.sh"
+  git config --global user.name "Proactive Engineer"
+  git config --global user.email "proactive-engineer[bot]@users.noreply.github.com"
+  ok "Private key copied. Git configured for App identity."
 fi
 
 # ── Symlink skill (shared across all agents) ───────────────────
@@ -316,7 +322,8 @@ cat > "$CONFIG_FILE" <<CONF
   },
   "env": {
     ${GITHUB_ENV_BLOCK},
-    "GEMINI_API_KEY": "${GEMINI_API_KEY}"
+    "GEMINI_API_KEY": "${GEMINI_API_KEY}",
+    "PATH": "${INSTALL_DIR}/scripts/bin:\${PATH}"
   },
   "agents": {
     "defaults": {
