@@ -194,33 +194,49 @@ mkdir -p "$(dirname "$SKILL_DIR")"
 ln -sf "$INSTALL_DIR/skills/proactive-engineer" "$SKILL_DIR"
 ok "Skill installed."
 
-# ── Install Tailscale ──────────────────────────────────────────
+# ── Install Tailscale (optional) ───────────────────────────────
 
-echo ""
-echo -e "${YELLOW}━━━ Setting Up Dashboard Access (Tailscale) ━━━━━${NC}"
-echo ""
+SETUP_TAILSCALE="${SETUP_TAILSCALE:-}"
+TAILSCALE_IP=""
 
-if ! command -v tailscale >/dev/null 2>&1; then
-  info "Installing Tailscale..."
-  curl -fsSL https://tailscale.com/install.sh | sh
-  ok "Tailscale installed."
-else
-  ok "Tailscale already installed."
+if [ -z "$SETUP_TAILSCALE" ]; then
+  echo ""
+  echo -e "  ${CYAN}Set up Tailscale for dashboard access?${NC}"
+  echo -e "  ${DIM}Lets you access the agent's web UI from any device on your Tailnet.${NC}"
+  echo -e "  ${DIM}Skip this if you only need Slack. You can set it up later.${NC}"
+  echo -n "  [y/N] > "
+  read -r SETUP_TAILSCALE
 fi
 
-if ! sudo tailscale status >/dev/null 2>&1; then
-  info "Starting Tailscale — follow the link below to authenticate:"
+if [[ "$SETUP_TAILSCALE" =~ ^[Yy] ]]; then
   echo ""
-  sudo tailscale up
+  echo -e "${YELLOW}━━━ Setting Up Dashboard Access (Tailscale) ━━━━━${NC}"
   echo ""
-  ok "Tailscale connected."
-else
-  ok "Tailscale already connected."
-fi
 
-TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "")
-if [ -n "$TAILSCALE_IP" ]; then
-  ok "Tailscale IP: $TAILSCALE_IP"
+  if ! command -v tailscale >/dev/null 2>&1; then
+    info "Installing Tailscale..."
+    curl -fsSL https://tailscale.com/install.sh | sh
+    ok "Tailscale installed."
+  else
+    ok "Tailscale already installed."
+  fi
+
+  if ! sudo tailscale status >/dev/null 2>&1; then
+    info "Starting Tailscale — follow the link below to authenticate:"
+    echo ""
+    sudo tailscale up
+    echo ""
+    ok "Tailscale connected."
+  else
+    ok "Tailscale already connected."
+  fi
+
+  TAILSCALE_IP=$(tailscale ip -4 2>/dev/null || echo "")
+  if [ -n "$TAILSCALE_IP" ]; then
+    ok "Tailscale IP: $TAILSCALE_IP"
+  fi
+else
+  info "Skipping Tailscale. You can set it up later — see the README."
 fi
 
 # ── Set up agent workspace + heartbeat ─────────────────────────
@@ -238,16 +254,18 @@ ok "Workspace ready at $WORKSPACE_DIR"
 mkdir -p "$CONFIG_DIR"
 
 info "Writing configuration for agent '${AGENT_NAME}'..."
+
+GATEWAY_EXTRA=""
+if [ -n "$TAILSCALE_IP" ]; then
+  GATEWAY_EXTRA=',
+    "auth": { "allowTailscale": true },
+    "tailscale": { "mode": "serve" }'
+fi
+
 cat > "$CONFIG_FILE" <<CONF
 {
   "gateway": {
-    "port": ${AGENT_PORT},
-    "auth": {
-      "allowTailscale": true
-    },
-    "tailscale": {
-      "mode": "serve"
-    }
+    "port": ${AGENT_PORT}${GATEWAY_EXTRA}
   },
   "env": {
     "GITHUB_TOKEN": "${GITHUB_TOKEN}",
