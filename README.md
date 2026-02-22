@@ -8,21 +8,23 @@ An open-source AI agent that lives on a VM alongside your team. It connects to y
 
 ## Install
 
-One command. Run this on the machine where you want the agent to live (a VM, a server, your dev box — anywhere with a persistent connection):
+One command. Run this on the machine where you want the agent to live:
 
 ```bash
 curl -fsSL https://proactive.engineer/install.sh | bash
 ```
 
 The script will:
-1. Ask for your **Slack** (App Token + Bot Token), **GitHub**, and **Gemini** API keys
-2. Install all dependencies automatically
-3. Download Proactive Engineer
-4. Start it as a background service that runs continuously
+1. Ask for an **agent name** and **Slack display name**
+2. Ask for your **Slack** (App Token + Bot Token), **GitHub**, and **Gemini** API keys
+3. Install all dependencies automatically
+4. Start the agent as a background service with a 30-minute heartbeat loop
 
-You can also pass keys as environment variables for automated setups:
+You can also pass everything as environment variables for automated setups:
 
 ```bash
+AGENT_NAME=backend \
+AGENT_DISPLAY_NAME="PE - Backend" \
 SLACK_APP_TOKEN=xapp-... \
 SLACK_BOT_TOKEN=xoxb-... \
 GITHUB_TOKEN=ghp_... \
@@ -36,13 +38,13 @@ After that, walk away. The agent is alive.
 
 ## What It Does
 
-Proactive Engineer runs a continuous loop:
+Proactive Engineer wakes up every **30 minutes** via OpenClaw's heartbeat system and runs a continuous loop:
 
 1. **Scan** — Reads across all your Slack channels and GitHub repos to understand what's happening
 2. **Reason** — Generates a list of everything it *could* do: bug fixes, refactors, missing tests, documentation gaps, dependency updates, CI improvements, new project scaffolding
 3. **Prioritize** — Ranks by impact, urgency, and confidence. Picks the thing that's actually worth doing right now
 4. **Execute** — Does the work. Real code, real branches, real PRs
-5. **Communicate** — Posts a concise summary to the relevant Slack channel
+5. **Communicate** — Posts a concise summary to the relevant Slack channel under its configured display name
 
 ```
 ⚡ [proactive-engineer] Added missing error handling to /api/payments
@@ -54,7 +56,7 @@ Why: Saw 3 unhandled promise rejections in #alerts yesterday.
 
 ## Daily Digest
 
-Once a day, the agent posts a transparency report to `#proactive-engineer`:
+Every day at **9:00 AM** (via a cron job registered during install), the agent posts a transparency report to `#proactive-engineer`:
 
 - **What it did** — PRs opened, with one-line summaries
 - **What it considered but skipped** — and why (e.g. "someone is actively working on that file")
@@ -68,9 +70,39 @@ The agent uses a built-in memory system. It remembers what kinds of PRs your tea
 
 ---
 
-## Multi-Agent
+## Multiple Agents
 
-Running multiple Proactive Engineers on the same team? They coordinate through public Slack channels. Each agent posts what it's about to work on before starting, so they don't duplicate effort. If no coordination channel exists, they'll create `#proactive-engineer`.
+Run the install script again to add more agents to the same machine. Each gets its own name, display identity, port, and isolated memory:
+
+```bash
+AGENT_NAME=frontend \
+AGENT_DISPLAY_NAME="PE - Frontend" \
+SLACK_APP_TOKEN=xapp-... \
+SLACK_BOT_TOKEN=xoxb-... \
+GITHUB_TOKEN=ghp_... \
+GEMINI_API_KEY=... \
+  curl -fsSL https://proactive.engineer/install.sh | bash
+```
+
+Each agent runs as a separate OpenClaw profile with its own systemd service, workspace, and session history. All agents share the same Slack app and GitHub token — they appear with different names in Slack via the `chat:write.customize` scope.
+
+Agents coordinate through public Slack channels. Before starting work, each agent posts what it's about to do in `#proactive-engineer` so others don't duplicate effort.
+
+```
+Machine
+  |
+  +-- Agent "backend"   (port 18789, Slack: "PE - Backend")
+  +-- Agent "frontend"  (port 18799, Slack: "PE - Frontend")
+  +-- Agent "infra"     (port 18809, Slack: "PE - Infra")
+```
+
+Manage individual agents using the profile flag:
+
+```bash
+openclaw --profile pe-backend gateway status
+openclaw --profile pe-frontend gateway restart
+openclaw --profile pe-infra dashboard
+```
 
 ---
 
@@ -86,10 +118,19 @@ Running multiple Proactive Engineers on the same team? They coordinate through p
 
 ## Configuration
 
-All config lives in `~/.openclaw/openclaw.json`. The install script writes this for you, but you can edit it anytime:
+Each agent's config lives at `~/.openclaw-pe-<name>/openclaw.json`. The install script writes this for you:
 
 ```json
 {
+  "gateway": {
+    "port": 18789
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "~/.openclaw/workspace-pe-backend",
+      "heartbeat": { "every": "30m" }
+    }
+  },
   "channels": {
     "slack": {
       "enabled": true,
@@ -103,7 +144,9 @@ All config lives in `~/.openclaw/openclaw.json`. The install script writes this 
         "enabled": true,
         "env": {
           "GITHUB_TOKEN": "ghp_...",
-          "GEMINI_API_KEY": "..."
+          "GEMINI_API_KEY": "...",
+          "AGENT_NAME": "backend",
+          "AGENT_DISPLAY_NAME": "PE - Backend"
         }
       }
     }
@@ -114,7 +157,7 @@ All config lives in `~/.openclaw/openclaw.json`. The install script writes this 
 Restart after changing config:
 
 ```bash
-openclaw gateway restart
+openclaw --profile pe-<name> gateway restart
 ```
 
 ---
@@ -155,6 +198,7 @@ You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
         "groups:history",
         "groups:read",
         "chat:write",
+        "chat:write.customize",
         "im:history",
         "im:read",
         "im:write",
@@ -231,6 +275,13 @@ You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
 | GitHub Token | `ghp_...` | github.com/settings/tokens |
 | Gemini API Key | `AI...` | aistudio.google.com/apikey |
 
+### Optional Environment Variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `AGENT_NAME` | `default` | Short identifier for this agent (used in profile/service names) |
+| `AGENT_DISPLAY_NAME` | `Proactive Engineer` | How this agent appears in Slack messages |
+
 ---
 
 ## Engineering Standard
@@ -242,11 +293,11 @@ The agent operates against a defined [engineering competency framework](skills/p
 ## Useful Commands
 
 ```bash
-openclaw gateway status          # Is the agent running?
-openclaw skills list             # Is the skill loaded?
-openclaw gateway restart         # Restart after config changes
-openclaw dashboard               # Open the web UI
-journalctl --user -u openclaw-gateway -f  # Watch logs
+openclaw --profile pe-<name> gateway status       # Is the agent running?
+openclaw --profile pe-<name> skills list           # Is the skill loaded?
+openclaw --profile pe-<name> gateway restart       # Restart after config changes
+openclaw --profile pe-<name> dashboard             # Open the web UI
+journalctl --user -u openclaw-gateway-pe-<name> -f # Watch logs
 ```
 
 ---
@@ -257,9 +308,10 @@ journalctl --user -u openclaw-gateway -f  # Watch logs
 skills/
   proactive-engineer/
     SKILL.md                              # Agent behavior definition
+    HEARTBEAT.md                          # 30-min scan loop instructions
     competencies/
       software_engineer_competency.md     # Engineering standard
-install.sh                                # One-command setup
+install.sh                                # One-command setup (supports named agents)
 TESTING.md                                # How to verify it works
 ```
 

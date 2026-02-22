@@ -4,15 +4,14 @@ set -euo pipefail
 REPO="refreshdotdev/proactive-engineer"
 BRANCH="main"
 INSTALL_DIR="$HOME/.proactive-engineer"
-SKILL_DIR="$HOME/.openclaw/skills/proactive-engineer"
-CONFIG_DIR="$HOME/.openclaw"
-CONFIG_FILE="$CONFIG_DIR/openclaw.json"
+BASE_PORT=18789
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 DIM='\033[2m'
+BOLD='\033[1m'
 NC='\033[0m'
 
 info()  { echo -e "${CYAN}[proactive-engineer]${NC} $1"; }
@@ -42,6 +41,37 @@ prompt_key() {
   eval "export $var_name='$value'"
 }
 
+prompt_optional() {
+  local var_name="$1"
+  local label="$2"
+  local hint="$3"
+  local default="$4"
+  local current="${!var_name:-}"
+
+  if [ -n "$current" ]; then
+    ok "$label: $current"
+    return
+  fi
+
+  echo ""
+  echo -e "  ${CYAN}$label${NC} ${DIM}(default: $default)${NC}"
+  echo -e "  ${DIM}$hint${NC}"
+  echo -n "  > "
+  read -r value
+  if [ -z "$value" ]; then
+    value="$default"
+  fi
+  eval "export $var_name='$value'"
+}
+
+count_existing_profiles() {
+  local count=0
+  for d in "$HOME"/.openclaw-pe-*/; do
+    [ -d "$d" ] && count=$((count + 1))
+  done
+  echo "$count"
+}
+
 # ── Banner ─────────────────────────────────────────────────────
 
 clear 2>/dev/null || true
@@ -54,21 +84,53 @@ echo "  │        an AI that ships while you sleep   │"
 echo "  │                                          │"
 echo "  └──────────────────────────────────────────┘"
 echo -e "${NC}"
-echo -e "  This script will set up Proactive Engineer on this machine."
-echo -e "  It installs everything needed and starts the agent as a"
-echo -e "  background service that runs continuously."
+echo -e "  This script sets up a Proactive Engineer agent on this"
+echo -e "  machine. You can run it multiple times to add more agents."
 echo ""
 echo -e "  ${DIM}https://proactive.engineer${NC}"
 echo -e "  ${DIM}https://github.com/refreshdotdev/proactive-engineer${NC}"
 echo ""
 
+# ── Agent Identity ─────────────────────────────────────────────
+
+echo -e "${YELLOW}━━━ Agent Identity ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+
+prompt_optional "AGENT_NAME" \
+  "Agent Name" \
+  "A short identifier for this agent (letters, numbers, hyphens). Used in config paths and service names." \
+  "default"
+
+prompt_optional "AGENT_DISPLAY_NAME" \
+  "Slack Display Name" \
+  "How this agent appears in Slack messages. Use different names for different agents." \
+  "Proactive Engineer"
+
+PROFILE_NAME="pe-${AGENT_NAME}"
+CONFIG_DIR="$HOME/.openclaw-${PROFILE_NAME}"
+CONFIG_FILE="$CONFIG_DIR/openclaw.json"
+WORKSPACE_DIR="$HOME/.openclaw/workspace-${PROFILE_NAME}"
+SKILL_DIR="$HOME/.openclaw/skills/proactive-engineer"
+
+NUM_EXISTING=$(count_existing_profiles)
+AGENT_PORT=$((BASE_PORT + NUM_EXISTING * 10))
+
+if [ -d "$CONFIG_DIR" ]; then
+  info "Profile '${AGENT_NAME}' already exists. This will update it."
+  EXISTING_PORT=$(grep -o '"port":[[:space:]]*[0-9]*' "$CONFIG_FILE" 2>/dev/null | grep -o '[0-9]*' || echo "")
+  if [ -n "$EXISTING_PORT" ]; then
+    AGENT_PORT=$EXISTING_PORT
+  fi
+fi
+
+ok "Agent: ${AGENT_NAME} (display: ${AGENT_DISPLAY_NAME})"
+ok "Port: ${AGENT_PORT}"
+
 # ── Collect API keys ───────────────────────────────────────────
 
+echo ""
 echo -e "${YELLOW}━━━ Integration Keys ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -e "  Proactive Engineer needs API keys to connect to your"
-echo -e "  team's tools. Set them as env vars to skip these prompts."
-echo ""
+echo -e "  Set these as env vars to skip prompts."
 echo -e "  ${DIM}Setup guide: https://github.com/refreshdotdev/proactive-engineer#setting-up-your-keys${NC}"
 
 prompt_key "SLACK_APP_TOKEN" \
@@ -97,7 +159,7 @@ echo -e "${YELLOW}━━━ Installing Dependencies ━━━━━━━━━�
 echo ""
 
 if ! command -v openclaw >/dev/null 2>&1; then
-  info "Installing OpenClaw (this handles Node.js, Git, and npm)..."
+  info "Installing OpenClaw (handles Node.js, Git, npm)..."
   curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard
   export PATH="$HOME/.local/bin:$PATH"
   command -v openclaw >/dev/null 2>&1 || err "OpenClaw installation failed. See https://docs.openclaw.ai/start/getting-started"
@@ -113,7 +175,7 @@ echo -e "${YELLOW}━━━ Setting Up Proactive Engineer ━━━━━━━�
 echo ""
 
 if [ -d "$INSTALL_DIR/.git" ]; then
-  info "Updating existing installation..."
+  info "Updating source..."
   git -C "$INSTALL_DIR" pull --quiet origin "$BRANCH" 2>/dev/null || true
   ok "Updated."
 else
@@ -123,7 +185,7 @@ else
   ok "Downloaded to $INSTALL_DIR"
 fi
 
-# ── Symlink skill ──────────────────────────────────────────────
+# ── Symlink skill (shared across all agents) ───────────────────
 
 info "Installing agent skill..."
 mkdir -p "$(dirname "$SKILL_DIR")"
@@ -132,47 +194,36 @@ mkdir -p "$(dirname "$SKILL_DIR")"
 ln -sf "$INSTALL_DIR/skills/proactive-engineer" "$SKILL_DIR"
 ok "Skill installed."
 
+# ── Set up agent workspace + heartbeat ─────────────────────────
+
+info "Setting up workspace for agent '${AGENT_NAME}'..."
+mkdir -p "$WORKSPACE_DIR"
+ln -sf "$INSTALL_DIR/skills/proactive-engineer/HEARTBEAT.md" "$WORKSPACE_DIR/HEARTBEAT.md"
+ok "Workspace ready at $WORKSPACE_DIR"
+
 # ── Write config ───────────────────────────────────────────────
 
 mkdir -p "$CONFIG_DIR"
 
-if [ -f "$CONFIG_FILE" ] && command -v node >/dev/null 2>&1; then
-  info "Updating configuration..."
-  node -e "
-const fs = require('fs');
-const p = '$CONFIG_FILE';
-const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
-
-// Slack channel config
-if (!cfg.channels) cfg.channels = {};
-cfg.channels.slack = {
-  enabled: true,
-  appToken: process.env.SLACK_APP_TOKEN,
-  botToken: process.env.SLACK_BOT_TOKEN
-};
-
-// Skill config
-if (!cfg.skills) cfg.skills = {};
-if (!cfg.skills.entries) cfg.skills.entries = {};
-cfg.skills.entries['proactive-engineer'] = {
-  enabled: true,
-  env: {
-    GITHUB_TOKEN: process.env.GITHUB_TOKEN,
-    GEMINI_API_KEY: process.env.GEMINI_API_KEY
-  }
-};
-
-fs.writeFileSync(p, JSON.stringify(cfg, null, 2));
-"
-else
-  info "Writing configuration..."
-  cat > "$CONFIG_FILE" <<CONF
+info "Writing configuration for agent '${AGENT_NAME}'..."
+cat > "$CONFIG_FILE" <<CONF
 {
+  "gateway": {
+    "port": ${AGENT_PORT}
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "${WORKSPACE_DIR}",
+      "heartbeat": {
+        "every": "30m"
+      }
+    }
+  },
   "channels": {
     "slack": {
       "enabled": true,
-      "appToken": "$SLACK_APP_TOKEN",
-      "botToken": "$SLACK_BOT_TOKEN"
+      "appToken": "${SLACK_APP_TOKEN}",
+      "botToken": "${SLACK_BOT_TOKEN}"
     }
   },
   "skills": {
@@ -180,16 +231,17 @@ else
       "proactive-engineer": {
         "enabled": true,
         "env": {
-          "GITHUB_TOKEN": "$GITHUB_TOKEN",
-          "GEMINI_API_KEY": "$GEMINI_API_KEY"
+          "GITHUB_TOKEN": "${GITHUB_TOKEN}",
+          "GEMINI_API_KEY": "${GEMINI_API_KEY}",
+          "AGENT_NAME": "${AGENT_NAME}",
+          "AGENT_DISPLAY_NAME": "${AGENT_DISPLAY_NAME}"
         }
       }
     }
   }
 }
 CONF
-fi
-ok "Configuration saved."
+ok "Configuration saved to $CONFIG_FILE"
 
 # ── Install daemon ─────────────────────────────────────────────
 
@@ -197,44 +249,68 @@ echo ""
 echo -e "${YELLOW}━━━ Starting Background Service ━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 
-info "Installing background service..."
-openclaw gateway install 2>/dev/null || warn "Gateway install returned non-zero (may already be configured)."
+info "Installing service for agent '${AGENT_NAME}'..."
+openclaw --profile "$PROFILE_NAME" gateway install 2>/dev/null \
+  || warn "Gateway install returned non-zero (may already be configured)."
 
 if command -v loginctl >/dev/null 2>&1; then
-  sudo loginctl enable-linger "$(whoami)" 2>/dev/null || warn "Could not enable-linger — service may not survive logout without this."
+  sudo loginctl enable-linger "$(whoami)" 2>/dev/null \
+    || warn "Could not enable-linger — service may not survive logout."
 fi
 
-systemctl --user enable openclaw-gateway 2>/dev/null || true
-systemctl --user restart openclaw-gateway 2>/dev/null || true
+systemctl --user enable "openclaw-gateway-${PROFILE_NAME}" 2>/dev/null || true
+systemctl --user restart "openclaw-gateway-${PROFILE_NAME}" 2>/dev/null || true
 
 sleep 3
 
-if openclaw gateway status 2>/dev/null | grep -qi "running"; then
-  ok "Agent is running."
+if openclaw --profile "$PROFILE_NAME" gateway status 2>/dev/null | grep -qi "running"; then
+  ok "Agent '${AGENT_NAME}' is running."
 else
-  warn "Agent may still be starting up. Check with: openclaw gateway status"
+  warn "Agent may still be starting. Check: openclaw --profile ${PROFILE_NAME} gateway status"
 fi
+
+# ── Register daily digest cron ─────────────────────────────────
+
+info "Registering daily digest cron job..."
+openclaw --profile "$PROFILE_NAME" cron add \
+  --name "daily-digest-${AGENT_NAME}" \
+  --cron "0 9 * * *" \
+  --session isolated \
+  --message "Post your daily digest to #proactive-engineer. Include: (1) What you did today (PRs with one-line summaries), (2) What you considered but chose not to do and why, (3) What you're watching. Post as '${AGENT_DISPLAY_NAME}'." \
+  2>/dev/null || warn "Could not register daily digest cron (may need gateway running first)."
+ok "Daily digest scheduled for 9am."
 
 # ── Done ───────────────────────────────────────────────────────
 
 echo ""
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
-echo -e "  ${GREEN}Proactive Engineer is installed and running.${NC}"
+echo -e "  ${GREEN}${BOLD}Agent '${AGENT_NAME}' is installed and running.${NC}"
 echo ""
-echo -e "  It will now continuously monitor your Slack and GitHub,"
-echo -e "  reason about what needs doing, and open PRs with its work."
+echo -e "  Display name:  ${AGENT_DISPLAY_NAME}"
+echo -e "  Profile:       ${PROFILE_NAME}"
+echo -e "  Port:          ${AGENT_PORT}"
+echo -e "  Heartbeat:     every 30 minutes"
+echo -e "  Daily digest:  9:00 AM"
 echo ""
 echo -e "  ${CYAN}Useful commands:${NC}"
 echo ""
-echo "    openclaw gateway status       Check if the agent is running"
-echo "    openclaw skills list          Verify the skill is loaded"
-echo "    journalctl --user -u openclaw-gateway -f   Watch logs"
-echo "    openclaw dashboard            Open the web UI"
+echo "    openclaw --profile ${PROFILE_NAME} gateway status"
+echo "    openclaw --profile ${PROFILE_NAME} skills list"
+echo "    openclaw --profile ${PROFILE_NAME} gateway restart"
+echo "    openclaw --profile ${PROFILE_NAME} dashboard"
+echo "    journalctl --user -u openclaw-gateway-${PROFILE_NAME} -f"
 echo ""
-echo -e "  ${DIM}Config:  $CONFIG_FILE${NC}"
-echo -e "  ${DIM}Skill:   $SKILL_DIR${NC}"
-echo -e "  ${DIM}Source:   $INSTALL_DIR${NC}"
+echo -e "  ${CYAN}Add another agent:${NC}"
+echo ""
+echo "    AGENT_NAME=frontend AGENT_DISPLAY_NAME=\"PE - Frontend\" \\"
+echo "    SLACK_APP_TOKEN=\$SLACK_APP_TOKEN SLACK_BOT_TOKEN=\$SLACK_BOT_TOKEN \\"
+echo "    GITHUB_TOKEN=\$GITHUB_TOKEN GEMINI_API_KEY=\$GEMINI_API_KEY \\"
+echo "      curl -fsSL https://proactive.engineer/install.sh | bash"
+echo ""
+echo -e "  ${DIM}Config:     $CONFIG_FILE${NC}"
+echo -e "  ${DIM}Workspace:  $WORKSPACE_DIR${NC}"
+echo -e "  ${DIM}Source:     $INSTALL_DIR${NC}"
 echo ""
 echo -e "${GREEN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""

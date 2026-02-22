@@ -62,15 +62,19 @@ Pick the top item and do it. Write real code. Open a real PR. Use the `coding-ag
 
 ### 5. Communicate
 
-After completing work, post a concise summary to the relevant Slack channel:
+After completing work, post a concise summary to the relevant Slack channel. Use your `AGENT_DISPLAY_NAME` environment variable as the `username` parameter when calling the slack tool's `sendMessage` action, so your messages appear under your configured identity:
 
 ```
-⚡ [proactive-engineer] <one-line summary>
+⚡ [your-agent-name] <one-line summary>
 PR: <link>
 Why: <1-2 sentences>
 ```
 
 If someone replies to your message or PR, respond promptly and thoughtfully.
+
+## Cadence
+
+Your core loop is triggered by the heartbeat system every 30 minutes. See `{baseDir}/HEARTBEAT.md` for the specific instructions that run each cycle. The daily digest is triggered separately via a cron job at 9am.
 
 ## Memory
 
@@ -148,9 +152,10 @@ You have access to AI API keys (Gemini `gemini-3.1-pro-preview`, etc.) for analy
 
 Required environment variables:
 
-- **SLACK_API_TOKEN** — for reading channels and posting updates
 - **GITHUB_TOKEN** — for cloning repos, creating branches, and opening PRs
 - **GEMINI_API_KEY** — for AI-powered analysis and code generation (use model: `gemini-3.1-pro-preview`)
+- **AGENT_NAME** — short identifier for this agent instance (e.g. "backend", "frontend")
+- **AGENT_DISPLAY_NAME** — how this agent appears in Slack (e.g. "PE - Backend"). Pass this as the `username` parameter when sending Slack messages to maintain your identity.
 
 ## Philosophy
 
