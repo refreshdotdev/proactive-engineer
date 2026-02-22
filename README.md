@@ -15,7 +15,7 @@ curl -fsSL https://proactive.engineer/install.sh | bash
 ```
 
 The script will:
-1. Ask for your **Slack**, **GitHub**, and **Gemini** API keys
+1. Ask for your **Slack** (App Token + Bot Token), **GitHub**, and **Gemini** API keys
 2. Install all dependencies automatically
 3. Download Proactive Engineer
 4. Start it as a background service that runs continuously
@@ -23,7 +23,8 @@ The script will:
 You can also pass keys as environment variables for automated setups:
 
 ```bash
-SLACK_API_TOKEN=xoxb-... \
+SLACK_APP_TOKEN=xapp-... \
+SLACK_BOT_TOKEN=xoxb-... \
 GITHUB_TOKEN=ghp_... \
 GEMINI_API_KEY=... \
   curl -fsSL https://proactive.engineer/install.sh | bash
@@ -89,14 +90,20 @@ All config lives in `~/.openclaw/openclaw.json`. The install script writes this 
 
 ```json
 {
+  "channels": {
+    "slack": {
+      "enabled": true,
+      "appToken": "xapp-...",
+      "botToken": "xoxb-..."
+    }
+  },
   "skills": {
     "entries": {
       "proactive-engineer": {
         "enabled": true,
         "env": {
-          "SLACK_API_TOKEN": "xoxb-your-token",
-          "GITHUB_TOKEN": "ghp_your-token",
-          "GEMINI_API_KEY": "your-gemini-key"
+          "GITHUB_TOKEN": "ghp_...",
+          "GEMINI_API_KEY": "..."
         }
       }
     }
@@ -104,19 +111,104 @@ All config lives in `~/.openclaw/openclaw.json`. The install script writes this 
 }
 ```
 
-### Required Keys
-
-| Key | What it's for |
-| --- | --- |
-| `SLACK_API_TOKEN` | Reading channels, posting updates |
-| `GITHUB_TOKEN` | Cloning repos, creating branches, opening PRs |
-| `GEMINI_API_KEY` | AI reasoning and code generation (`gemini-3.1-pro-preview`) |
-
 Restart after changing config:
 
 ```bash
 openclaw gateway restart
 ```
+
+---
+
+## Setting Up Your Keys
+
+### Slack Bot (2 tokens needed)
+
+You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
+
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App** → **From scratch**
+2. Give it a name (e.g. "Proactive Engineer") and select your workspace
+
+**Enable Socket Mode:**
+
+3. Go to **Socket Mode** (left sidebar) and toggle it **on**
+4. Go to **Basic Information** → **App-Level Tokens** → **Generate Token and Scopes**
+5. Name it anything, add the scope `connections:write`, click **Generate**
+6. Copy the **App Token** — starts with `xapp-`
+
+**Set Bot Permissions:**
+
+7. Go to **OAuth & Permissions** (left sidebar)
+8. Under **Bot Token Scopes**, add these:
+
+| Scope | Why |
+| --- | --- |
+| `channels:history` | Read messages in public channels |
+| `channels:read` | List channels |
+| `groups:history` | Read messages in private channels |
+| `groups:read` | List private channels |
+| `chat:write` | Send messages |
+| `im:history` | Read DMs |
+| `im:read` | List DMs |
+| `im:write` | Open DMs |
+| `reactions:read` | Read reactions |
+| `reactions:write` | Add reactions |
+| `pins:read` | Read pinned messages |
+| `pins:write` | Pin messages |
+| `users:read` | Look up users |
+| `emoji:read` | Read custom emoji |
+| `files:write` | Upload files |
+| `channels:manage` | Create channels (for `#proactive-engineer`) |
+
+**Install and copy token:**
+
+9. Scroll up and click **Install to Workspace** → **Allow**
+10. Copy the **Bot User OAuth Token** — starts with `xoxb-`
+
+**Subscribe to events:**
+
+11. Go to **Event Subscriptions** (left sidebar), toggle **on**
+12. Under **Subscribe to bot events**, add: `message.channels`, `message.groups`, `message.im`, `app_mention`, `reaction_added`, `member_joined_channel`
+13. Click **Save Changes**
+
+**Enable App Home:**
+
+14. Go to **App Home** (left sidebar), enable the **Messages Tab**
+
+**Invite the bot:**
+
+15. In Slack, invite the bot to channels: `/invite @Proactive Engineer`
+
+### GitHub Personal Access Token
+
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **Generate new token** → **Fine-grained token** (recommended) or **Classic**
+3. For classic tokens, select these scopes:
+
+| Scope | Why |
+| --- | --- |
+| `repo` | Full access to repos (clone, branch, PR) |
+
+4. Set an expiration (or no expiration for a persistent agent)
+5. Click **Generate token**
+6. Copy the token — starts with `ghp_`
+
+### Gemini API Key
+
+1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+2. Click **Create API Key**
+3. Select or create a Google Cloud project
+4. Copy the key
+
+---
+
+### Required Keys Summary
+
+| Key | Format | Where to get it |
+| --- | --- | --- |
+| Slack App Token | `xapp-...` | api.slack.com/apps → Socket Mode → App-Level Tokens |
+| Slack Bot Token | `xoxb-...` | api.slack.com/apps → OAuth & Permissions |
+| GitHub Token | `ghp_...` | github.com/settings/tokens |
+| Gemini API Key | `AI...` | aistudio.google.com/apikey |
 
 ---
 

@@ -27,7 +27,7 @@ prompt_key() {
   local current="${!var_name:-}"
 
   if [ -n "$current" ]; then
-    ok "$label: already set via environment"
+    ok "$label: set via environment"
     return
   fi
 
@@ -39,7 +39,7 @@ prompt_key() {
   if [ -z "$value" ]; then
     err "$label is required."
   fi
-  eval "$var_name='$value'"
+  eval "export $var_name='$value'"
 }
 
 # ── Banner ─────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ echo "  │                                          │"
 echo "  └──────────────────────────────────────────┘"
 echo -e "${NC}"
 echo -e "  This script will set up Proactive Engineer on this machine."
-echo -e "  It will install everything needed and start the agent as a"
+echo -e "  It installs everything needed and starts the agent as a"
 echo -e "  background service that runs continuously."
 echo ""
 echo -e "  ${DIM}https://proactive.engineer${NC}"
@@ -67,26 +67,30 @@ echo ""
 echo -e "${YELLOW}━━━ Integration Keys ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
 echo -e "  Proactive Engineer needs API keys to connect to your"
-echo -e "  team's tools. You can also set these as environment"
-echo -e "  variables before running this script."
+echo -e "  team's tools. Set them as env vars to skip these prompts."
 echo ""
+echo -e "  ${DIM}Setup guide: https://github.com/refreshdotdev/proactive-engineer#setting-up-your-keys${NC}"
 
-prompt_key "SLACK_API_TOKEN" \
+prompt_key "SLACK_APP_TOKEN" \
+  "Slack App Token" \
+  "Starts with xapp-... — api.slack.com/apps → Socket Mode → App-Level Tokens"
+
+prompt_key "SLACK_BOT_TOKEN" \
   "Slack Bot Token" \
-  "Starts with xoxb-... — create one at api.slack.com/apps"
+  "Starts with xoxb-... — api.slack.com/apps → OAuth & Permissions"
 
 prompt_key "GITHUB_TOKEN" \
   "GitHub Personal Access Token" \
-  "Starts with ghp_... — create at github.com/settings/tokens (needs repo scope)"
+  "Starts with ghp_... — github.com/settings/tokens (needs repo scope)"
 
 prompt_key "GEMINI_API_KEY" \
   "Google Gemini API Key" \
-  "From aistudio.google.com — used for reasoning and code generation"
+  "From aistudio.google.com/apikey"
 
 echo ""
 ok "All keys collected."
 
-# ── Install OpenClaw (handles Node.js, git, npm) ──────────────
+# ── Install OpenClaw ───────────────────────────────────────────
 
 echo ""
 echo -e "${YELLOW}━━━ Installing Dependencies ━━━━━━━━━━━━━━━━━━━━━${NC}"
@@ -138,28 +142,44 @@ if [ -f "$CONFIG_FILE" ] && command -v node >/dev/null 2>&1; then
 const fs = require('fs');
 const p = '$CONFIG_FILE';
 const cfg = JSON.parse(fs.readFileSync(p, 'utf8'));
+
+// Slack channel config
+if (!cfg.channels) cfg.channels = {};
+cfg.channels.slack = {
+  enabled: true,
+  appToken: process.env.SLACK_APP_TOKEN,
+  botToken: process.env.SLACK_BOT_TOKEN
+};
+
+// Skill config
 if (!cfg.skills) cfg.skills = {};
 if (!cfg.skills.entries) cfg.skills.entries = {};
 cfg.skills.entries['proactive-engineer'] = {
   enabled: true,
   env: {
-    SLACK_API_TOKEN: process.env.SLACK_API_TOKEN,
     GITHUB_TOKEN: process.env.GITHUB_TOKEN,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY
   }
 };
+
 fs.writeFileSync(p, JSON.stringify(cfg, null, 2));
 "
 else
   info "Writing configuration..."
   cat > "$CONFIG_FILE" <<CONF
 {
+  "channels": {
+    "slack": {
+      "enabled": true,
+      "appToken": "$SLACK_APP_TOKEN",
+      "botToken": "$SLACK_BOT_TOKEN"
+    }
+  },
   "skills": {
     "entries": {
       "proactive-engineer": {
         "enabled": true,
         "env": {
-          "SLACK_API_TOKEN": "$SLACK_API_TOKEN",
           "GITHUB_TOKEN": "$GITHUB_TOKEN",
           "GEMINI_API_KEY": "$GEMINI_API_KEY"
         }
