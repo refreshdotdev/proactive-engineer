@@ -1,5 +1,13 @@
 # proactive.engineer
 
+<p align="center">
+  <img src="proactive-engineer-hero.png" alt="Proactive Engineer" width="600">
+</p>
+
+<p align="center">
+  <em>An AI that ships while you sleep</em>
+</p>
+
 An open-source AI teammate that quietly handles the work your team knows is important but never gets to. It connects to your Slack and GitHub, figures out what's worth doing, and opens PRs for your team to review. You stay in control — it just makes sure the backlog of "we should really do that" actually gets done.
 
 **[proactive.engineer](https://proactive.engineer)** · **[GitHub](https://github.com/refreshdotdev/proactive-engineer)**
@@ -33,6 +41,60 @@ GEMINI_API_KEY=... \
 ```
 
 After that, walk away. The agent is alive.
+
+---
+
+## Deploy to AWS (Recommended)
+
+The best way to run Proactive Engineer is on a dedicated VM that stays on 24/7. We provide Terraform configs and a pre-built AMI so setup takes seconds, not minutes.
+
+### Quick Start with Pre-built AMI
+
+The pre-built AMI has Node.js, OpenClaw, and the proactive-engineer skill already installed. You just provide your API keys.
+
+```bash
+cd terraform/
+
+# Copy the example and fill in your keys
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your Slack, GitHub, and Gemini keys
+
+# Deploy
+terraform init
+terraform apply
+```
+
+After `terraform apply` finishes (~30 seconds), SSH in and run the configure script:
+
+```bash
+ssh ubuntu@<public-ip>
+
+# On the VM:
+SLACK_APP_TOKEN=xapp-... \
+SLACK_BOT_TOKEN=xoxb-... \
+GITHUB_TOKEN=ghp_... \
+GEMINI_API_KEY=... \
+  ~/configure-agent.sh
+```
+
+The agent starts immediately as a systemd service.
+
+### Build Your Own AMI
+
+If you want to build the AMI yourself (e.g. for a different region):
+
+```bash
+cd packer/
+
+packer init proactive-engineer.pkr.hcl
+
+packer build \
+  -var "vpc_id=vpc-xxx" \
+  -var "subnet_id=subnet-xxx" \
+  proactive-engineer.pkr.hcl
+```
+
+Then update `terraform/main.tf` to use your custom AMI ID.
 
 ---
 
