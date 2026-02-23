@@ -453,9 +453,16 @@ You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
 8. Go to **Install App** (left sidebar) → **Install to Workspace** → **Allow**
 9. Copy the **Bot User OAuth Token** — starts with `xoxb-`
 
+**Set the bot avatar (optional):**
+
+10. Go to **Basic Information** > **Display Information**
+11. Upload the logo from the repo: `proactive-engineer-logo.png`
+
 **Invite the bot to your channels:**
 
-10. In Slack, invite the bot: `/invite @Proactive Engineer`
+12. In Slack, invite the bot: `/invite @Proactive Engineer`
+
+The agent also sets the avatar automatically on every message using `icon_url`, so even without uploading the logo to the app settings, messages will show the Proactive Engineer icon.
 
 ### GitHub App (Recommended)
 
@@ -471,9 +478,10 @@ A GitHub App gives the agent its own identity — commits and PRs show as "Proac
    - **Metadata**: Read-only (auto-selected)
 5. Click **Create GitHub App**
 6. On the app page, note the **App ID**
-7. Scroll down to **Private keys** → **Generate a private key** → save the `.pem` file
-8. Go to **Install App** (left sidebar) → install it on your account/org → select the repos you want the agent to access
-9. After installing, note the **Installation ID** from the URL: `github.com/settings/installations/INSTALLATION_ID`
+7. Under **Display Information**, upload `proactive-engineer-logo.png` from the repo as the app avatar
+8. Scroll down to **Private keys** > **Generate a private key** > save the `.pem` file
+9. Go to **Install App** > install on your account/org > select the repos
+10. Note the **Installation ID** from the URL: `github.com/settings/installations/INSTALLATION_ID`
 
 You'll need three values: **App ID**, **Installation ID**, and the **path to the .pem file**.
 

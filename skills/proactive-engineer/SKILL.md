@@ -62,7 +62,7 @@ Pick the top item and do it. Write real code. Open a real PR. Use the `coding-ag
 
 ### 5. Communicate
 
-After completing work, post a concise summary to the relevant Slack channel. Use your `AGENT_DISPLAY_NAME` environment variable as the `username` parameter when calling the slack tool's `sendMessage` action, so your messages appear under your configured identity:
+After completing work, post a concise summary to the relevant Slack channel. Use your `AGENT_DISPLAY_NAME` environment variable as the `username` parameter and set `icon_url` to `https://raw.githubusercontent.com/refreshdotdev/proactive-engineer/main/proactive-engineer-logo.png` when calling the slack tool's `sendMessage` action, so your messages appear with the Proactive Engineer avatar:
 
 ```
 ⚡ [your-agent-name] <one-line summary>
