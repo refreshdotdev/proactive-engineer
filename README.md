@@ -145,55 +145,44 @@ terraform destroy
 
 ## Deploy to Vercel Sandbox
 
-No AWS account needed. Vercel Sandbox runs your agent in an isolated microVM with automatic snapshot-based persistence.
-
-### How It Works
-
-Vercel Sandbox VMs have a ~5 hour timeout. To keep the agent running 24/7, the deploy script creates a **snapshot** of the fully-configured agent. A Vercel Cron Job restarts the agent from the snapshot every 5 hours — the agent's memory, config, and session history are preserved across restarts.
+Run your AI agent on [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) — no AWS, no VMs, no infrastructure to manage. The agent runs in an isolated Firecracker microVM with snapshot-based persistence so it stays alive 24/7.
 
 ### Quick Start
 
 ```bash
 cd vercel-sandbox/
-
-# Install dependencies
 npm install
 
-# Link to a Vercel project (creates one if needed)
+# Connect to Vercel
 vercel link
-
-# Pull the OIDC token (creates .env.local with VERCEL_OIDC_TOKEN)
 vercel env pull
 
-# Add your keys to .env.local (append to the file vercel created)
-# See .env.example for the full list:
-#   SLACK_APP_TOKEN, SLACK_BOT_TOKEN, GITHUB_APP_ID,
-#   GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PEM, GEMINI_API_KEY
-
-# First-time deploy: creates sandbox, installs everything, takes snapshot
+# Add your API keys to .env.local (see .env.example)
+# Then deploy:
 npm run deploy
 ```
 
-After deploy completes, it outputs a **Snapshot ID**. The agent is already running.
+That's it. The deploy script:
+1. Spins up a Vercel Sandbox microVM
+2. Installs OpenClaw and the Proactive Engineer agent
+3. Connects to your Slack and GitHub
+4. Takes a snapshot for instant resume
 
-### Keep It Alive (Cron)
+After deploy, your agent is live and responding in Slack.
 
-Deploy the keepalive cron to Vercel so the agent auto-restarts before each timeout:
+### 24/7 Operation
+
+Vercel Sandbox VMs timeout after ~5 hours. To keep the agent running continuously, deploy the built-in keepalive cron:
 
 ```bash
-# Set the snapshot ID and cron secret as Vercel env vars
-vercel env add SNAPSHOT_ID    # paste the snapshot ID from deploy output
-vercel env add CRON_SECRET    # any random string for auth
-
-# Deploy the cron endpoint
+vercel env add SNAPSHOT_ID    # from deploy output
+vercel env add CRON_SECRET    # any random string
 vercel deploy --prod
 ```
 
-The cron runs every 5 hours, boots a new sandbox from the latest snapshot, and starts the agent.
+A Vercel Cron Job automatically restarts the agent from the latest snapshot every 5 hours. The agent's memory, config, and session history are preserved across restarts — it picks up exactly where it left off.
 
 ### Manual Restart
-
-If you need to restart manually:
 
 ```bash
 SNAPSHOT_ID=snap_... npm run keepalive
