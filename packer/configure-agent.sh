@@ -25,6 +25,11 @@ if [ -n "${GITHUB_APP_ID:-}" ] && [ -n "${GITHUB_APP_INSTALLATION_ID:-}" ] && [ 
   git config --global credential.helper "$INSTALL_DIR/scripts/bin/git-credential-github-app.sh"
   git config --global user.name "Proactive Engineer"
   git config --global user.email "proactive-engineer[bot]@users.noreply.github.com"
+  # Auto-upload logo to GitHub App
+  if [ -f "$INSTALL_DIR/scripts/upload-github-app-logo.sh" ]; then
+    GITHUB_APP_ID="$GITHUB_APP_ID" GITHUB_APP_PEM_PATH="$GITHUB_APP_PEM_PATH" \
+      bash "$INSTALL_DIR/scripts/upload-github-app-logo.sh" 2>/dev/null || true
+  fi
 elif [ -n "${GITHUB_TOKEN:-}" ]; then
   GITHUB_ENV_BLOCK="\"GITHUB_TOKEN\": \"$GITHUB_TOKEN\""
 else

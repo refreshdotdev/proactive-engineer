@@ -226,6 +226,12 @@ if [ "$USE_GITHUB_APP" = "yes" ] && [ -n "${GITHUB_APP_PEM_PATH:-}" ]; then
   git config --global user.name "Proactive Engineer"
   git config --global user.email "proactive-engineer[bot]@users.noreply.github.com"
   ok "Private key copied. Git configured for App identity."
+
+  # Upload the logo to the GitHub App automatically
+  if [ -f "$INSTALL_DIR/scripts/upload-github-app-logo.sh" ]; then
+    GITHUB_APP_ID="$GITHUB_APP_ID" GITHUB_APP_PEM_PATH="$PEM_DEST" \
+      bash "$INSTALL_DIR/scripts/upload-github-app-logo.sh" 2>/dev/null || true
+  fi
 fi
 
 # ── Symlink skill (shared across all agents) ───────────────────
