@@ -136,13 +136,37 @@ async function main() {
     createdAt: new Date().toISOString(),
   });
 
+  // Auto-deploy the keepalive cron
+  console.log("\nSetting up keepalive cron...");
+  const { execSync } = await import("child_process");
+  const cronSecret = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+
+  try {
+    execSync(`vercel env rm SNAPSHOT_ID production -y 2>/dev/null || true`, { stdio: "pipe" });
+    execSync(`echo "${snapshot.snapshotId}" | vercel env add SNAPSHOT_ID production`, { stdio: "pipe" });
+    console.log("Set SNAPSHOT_ID env var.");
+
+    execSync(`vercel env rm CRON_SECRET production -y 2>/dev/null || true`, { stdio: "pipe" });
+    execSync(`echo "${cronSecret}" | vercel env add CRON_SECRET production`, { stdio: "pipe" });
+    console.log("Set CRON_SECRET env var.");
+
+    console.log("Deploying keepalive cron to production...");
+    const deployOut = execSync("vercel deploy --prod --yes 2>&1", { encoding: "utf8" });
+    const prodUrl = deployOut.trim().split("\n").pop();
+    console.log(`Deployed: ${prodUrl}`);
+    console.log("Keepalive cron will restart the agent every 5 hours automatically.");
+  } catch (e) {
+    console.log("Could not auto-deploy cron. You can do it manually:");
+    console.log(`  vercel env add SNAPSHOT_ID production  (value: ${snapshot.snapshotId})`);
+    console.log(`  vercel env add CRON_SECRET production  (value: ${cronSecret})`);
+    console.log("  vercel deploy --prod");
+  }
+
   console.log("\n=== Proactive Engineer deployed to Vercel Sandbox ===");
   console.log(`Snapshot ID: ${snapshot.snapshotId}`);
+  console.log("The agent is running and the keepalive cron will keep it alive 24/7.");
   console.log(
-    `\nTo keep it running, deploy the cron keepalive: vercel deploy`
-  );
-  console.log(
-    `Or restart manually: SNAPSHOT_ID=${snapshot.snapshotId} npm run keepalive`
+    `\nTo restart manually: SNAPSHOT_ID=${snapshot.snapshotId} npm run keepalive`
   );
 }
 

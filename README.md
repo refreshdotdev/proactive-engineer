@@ -123,19 +123,11 @@ vercel env pull
 npm run deploy
 ```
 
-The deploy script spins up a microVM, installs OpenClaw and the agent, connects to your Slack and GitHub, and takes a snapshot. After deploy, the agent is live and responding in Slack.
+The deploy script spins up a microVM, installs OpenClaw and the agent, connects to your Slack and GitHub, takes a snapshot, and deploys a keepalive cron that restarts the agent every 5 hours. Everything is automatic.
 
 ### Keeping it running
 
-Vercel Sandbox VMs timeout after about 5 hours. To keep the agent running continuously, deploy the built-in keepalive cron:
-
-```bash
-vercel env add SNAPSHOT_ID    # from deploy output
-vercel env add CRON_SECRET    # any random string
-vercel deploy --prod
-```
-
-A Vercel Cron Job restarts the agent from the latest snapshot every 5 hours. Memory, config, and session history are all preserved across restarts. It picks up exactly where it left off.
+The deploy script sets up a Vercel Cron Job that restarts the agent from the latest snapshot every 5 hours. Memory, config, and session history are all preserved across restarts. It picks up exactly where it left off. No manual steps needed.
 
 ---
 
