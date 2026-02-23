@@ -36,31 +36,45 @@ async function main() {
   console.log(`Sandbox created: ${sandbox.sandboxId}`);
 
   console.log("Installing OpenClaw...");
-  await sandbox.runCommand("bash", [
+  const installResult = await sandbox.runCommand("bash", [
     "-c",
-    "curl -fsSL https://openclaw.ai/install.sh | bash -s -- --no-onboard",
+    [
+      "SHARP_IGNORE_GLOBAL_LIBVIPS=1 npm --loglevel error --no-fund --no-audit install -g openclaw@latest --ignore-scripts 2>&1",
+      "cd $(npm root -g)/openclaw && npm rebuild --ignore-scripts 2>&1",
+      "export PATH=\"$HOME/.global/npm/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$PATH\"",
+      "which openclaw && openclaw --version && echo '---INSTALL_OK---'",
+    ].join(" && "),
   ]);
+  const installOut = await installResult.stdout();
+  console.log(installOut.slice(-200));
+  if (!installOut.includes("INSTALL_OK")) {
+    throw new Error("OpenClaw install failed");
+  }
+
+  console.log("Verifying OpenClaw...");
+  const verify = await sandbox.runCommand("bash", [
+    "-c",
+    "export PATH=\"$HOME/.global/npm/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$PATH\" && which openclaw && openclaw --version",
+  ]);
+  console.log(await verify.stdout());
 
   console.log("Cloning proactive-engineer...");
-  await sandbox.runCommand("git", [
-    "clone",
-    "--depth",
-    "1",
-    REPO,
-    "/home/user/.proactive-engineer",
+  await sandbox.runCommand("bash", [
+    "-c",
+    "git clone --depth 1 https://github.com/refreshdotdev/proactive-engineer.git $HOME/.proactive-engineer && ls $HOME/.proactive-engineer/skills/proactive-engineer/SKILL.md",
   ]);
 
   console.log("Setting up skill symlink...");
   await sandbox.runCommand("bash", [
     "-c",
-    "mkdir -p ~/.openclaw/skills && ln -sf ~/.proactive-engineer/skills/proactive-engineer ~/.openclaw/skills/proactive-engineer",
+    "mkdir -p $HOME/.openclaw/skills && ln -sf $HOME/.proactive-engineer/skills/proactive-engineer $HOME/.openclaw/skills/proactive-engineer && ls $HOME/.openclaw/skills/proactive-engineer/SKILL.md",
   ]);
 
   if (githubAppPem) {
     console.log("Writing GitHub App PEM...");
     await sandbox.runCommand("bash", [
       "-c",
-      `cat > ~/.proactive-engineer/github-app.pem << 'PEMEOF'\n${githubAppPem}\nPEMEOF\nchmod 600 ~/.proactive-engineer/github-app.pem`,
+      `cat > $HOME/.proactive-engineer/github-app.pem << 'PEMEOF'\n${githubAppPem}\nPEMEOF\nchmod 600 $HOME/.proactive-engineer/github-app.pem && ls -la $HOME/.proactive-engineer/github-app.pem`,
     ]);
   }
 
@@ -85,15 +99,30 @@ async function main() {
 
   await sandbox.runCommand("bash", [
     "-c",
-    `export ${envPrefix} && export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH" && bash ~/.proactive-engineer/packer/configure-agent.sh`,
+    `export ${envPrefix} && export PATH="$HOME/.global/npm/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$PATH" && bash ~/.proactive-engineer/packer/configure-agent.sh`,
   ]);
 
   console.log("Verifying gateway...");
+  await new Promise((r) => setTimeout(r, 15000));
   const check = await sandbox.runCommand("bash", [
     "-c",
-    'export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$PATH" && sleep 5 && cat /tmp/openclaw-pe-default.log 2>/dev/null | tail -5 || echo "Gateway starting..."',
+    'export PATH="$HOME/.global/npm/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$PATH" && cat /tmp/openclaw-pe-*.log 2>/dev/null | tail -10 || echo "No logs yet"',
   ]);
-  console.log(await check.stdout());
+  const checkOut = await check.stdout();
+  console.log(checkOut);
+
+  if (checkOut.includes("slack") && checkOut.includes("connected")) {
+    console.log("Slack connected!");
+  } else {
+    console.log("Warning: Slack connection not confirmed yet. The agent may still be starting.");
+  }
+
+  console.log("Verifying files before snapshot...");
+  const files = await sandbox.runCommand("bash", [
+    "-c",
+    'export PATH="$HOME/.global/npm/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$PATH" && echo "openclaw: $(which openclaw)" && echo "config: $(ls ~/.openclaw-pe-default/openclaw.json 2>/dev/null || echo missing)" && echo "skill: $(ls ~/.openclaw/skills/proactive-engineer/SKILL.md 2>/dev/null || echo missing)" && echo "pem: $(ls ~/.proactive-engineer/github-app.pem 2>/dev/null || echo missing)"',
+  ]);
+  console.log(await files.stdout());
 
   console.log("Creating snapshot...");
   const snapshot = await sandbox.snapshot({ expiration: 0 });
