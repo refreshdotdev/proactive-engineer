@@ -48,6 +48,12 @@ if [ -f "$SETUP_HOME/configure-agent.sh" ]; then
     sudo -u "$SETUP_USER" git -C "$INSTALL_DIR" pull --quiet origin main 2>/dev/null || true
   fi
 
+  # Use the repo's configure-agent.sh (latest), not the AMI-baked one
+  CONFIGURE_SCRIPT="$INSTALL_DIR/packer/configure-agent.sh"
+  if [ ! -f "$CONFIGURE_SCRIPT" ]; then
+    CONFIGURE_SCRIPT="$SETUP_HOME/configure-agent.sh"
+  fi
+
   sudo -u "$SETUP_USER" \
     SLACK_APP_TOKEN="$SLACK_APP_TOKEN" \
     SLACK_BOT_TOKEN="$SLACK_BOT_TOKEN" \
@@ -61,7 +67,7 @@ if [ -f "$SETUP_HOME/configure-agent.sh" ]; then
     XDG_RUNTIME_DIR="$XDG_DIR" \
     DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_DIR/bus" \
     PATH="/home/ubuntu/.npm-global/bin:/home/ubuntu/.local/bin:/usr/local/bin:/usr/bin:/bin" \
-    bash "$SETUP_HOME/configure-agent.sh"
+    bash "$CONFIGURE_SCRIPT"
 
 else
   echo "Stock Ubuntu detected. Running full install..."
