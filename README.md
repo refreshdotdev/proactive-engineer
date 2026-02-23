@@ -44,6 +44,45 @@ After that, walk away. The agent is alive.
 
 ---
 
+## Setup with Claude Code
+
+The easiest way to get started: paste this prompt into [Claude Code](https://docs.anthropic.com/en/docs/claude-code) on a fresh VM. Claude will handle the entire setup for you.
+
+```
+I need you to set up Proactive Engineer (https://github.com/refreshdotdev/proactive-engineer)
+on this machine. It's an autonomous AI agent that monitors Slack and GitHub and opens PRs.
+
+Here are my API keys:
+
+- Slack App Token: xapp-...
+- Slack Bot Token: xoxb-...
+- GitHub App ID: ...
+- GitHub App Installation ID: ...
+- GitHub App Private Key: (paste the .pem contents here)
+- Gemini API Key: ...
+
+Steps:
+1. Save the GitHub App private key to ~/github-app.pem
+2. Run the install script:
+
+AGENT_NAME=default \
+AGENT_DISPLAY_NAME="Proactive Engineer" \
+SLACK_APP_TOKEN="xapp-..." \
+SLACK_BOT_TOKEN="xoxb-..." \
+GITHUB_APP_ID="..." \
+GITHUB_APP_INSTALLATION_ID="..." \
+GITHUB_APP_PEM_PATH="$HOME/github-app.pem" \
+GEMINI_API_KEY="..." \
+  curl -fsSL https://proactive.engineer/install.sh | bash
+
+3. Verify the agent is running with: openclaw --profile pe-default gateway status
+4. Check Slack connectivity in the logs
+```
+
+Replace the placeholder values with your actual keys. Claude Code will run the commands, verify the setup, and troubleshoot any issues.
+
+---
+
 ## Deploy to AWS (Recommended)
 
 The best way to run Proactive Engineer is on a dedicated VM that stays on 24/7. We provide Terraform configs and a pre-built AMI so the agent is running within a minute of `terraform apply`.
