@@ -8,23 +8,27 @@
   <em>An AI that ships while you sleep</em>
 </p>
 
-An open-source AI agent that lives on a server alongside your team. It connects to your Slack and GitHub, looks at everything going on, figures out what's worth doing, and opens PRs for your team to review. You stay in control. It just makes sure the backlog of "we should really do that" actually gets done.
+An open-source AI teammate that quietly handles the work your team knows is important but never gets to. It connects to your Slack and GitHub, figures out what's worth doing, and opens PRs for your team to review. You stay in control — it just makes sure the backlog of "we should really do that" actually gets done.
 
-**[proactive.engineer](https://proactive.engineer)** / **[GitHub](https://github.com/refreshdotdev/proactive-engineer)**
+**[proactive.engineer](https://proactive.engineer)** · **[GitHub](https://github.com/refreshdotdev/proactive-engineer)**
 
 ---
 
 ## Install
 
-One command. Run this on whatever machine you want the agent to live on:
+One command. Run this on the machine where you want the agent to live:
 
 ```bash
 curl -fsSL https://proactive.engineer/install.sh | bash
 ```
 
-The script will ask for an agent name, a Slack display name, and your API keys (Slack, GitHub, Gemini). Then it installs everything and starts the agent as a background service with a 30-minute heartbeat loop.
+The script will:
+1. Ask for an **agent name** and **Slack display name**
+2. Ask for your **Slack** (App Token + Bot Token), **GitHub**, and **Gemini** API keys
+3. Install all dependencies automatically
+4. Start the agent as a background service with a 30-minute heartbeat loop
 
-You can also pass everything as environment variables to skip the prompts:
+You can also pass everything as environment variables for automated setups:
 
 ```bash
 AGENT_NAME=backend \
@@ -42,7 +46,7 @@ After that, walk away. The agent is alive.
 
 ## Setup with Claude Code
 
-Paste this prompt into [Claude Code](https://docs.anthropic.com/en/docs/claude-code) on a fresh machine and it will handle the entire setup for you.
+The easiest way to get started: paste this prompt into [Claude Code](https://docs.anthropic.com/en/docs/claude-code) on a fresh VM. Claude will handle the entire setup for you.
 
 ```
 I need you to set up Proactive Engineer (https://github.com/refreshdotdev/proactive-engineer)
@@ -75,96 +79,62 @@ GEMINI_API_KEY="..." \
 4. Check Slack connectivity in the logs
 ```
 
-Replace the placeholders with your actual keys. Claude Code will run the commands, verify the setup, and troubleshoot if anything goes wrong.
-
-For **Vercel Sandbox deployment**, use this prompt instead:
-
-```
-I need you to deploy Proactive Engineer to Vercel Sandbox.
-Clone https://github.com/refreshdotdev/proactive-engineer and go to the vercel-sandbox/ directory.
-
-Run: npm install && vercel link && vercel env pull
-
-Then add these keys to .env.local (append after the VERCEL_OIDC_TOKEN line):
-
-SLACK_APP_TOKEN=xapp-...
-SLACK_BOT_TOKEN=xoxb-...
-GITHUB_APP_ID=...
-GITHUB_APP_INSTALLATION_ID=...
-GITHUB_APP_PEM="-----BEGIN RSA PRIVATE KEY-----
-...paste .pem contents...
------END RSA PRIVATE KEY-----"
-GEMINI_API_KEY=...
-
-Then run: npm run deploy
-
-Verify the agent is running by checking the deploy output for "Snapshot created"
-and messaging the Proactive Engineer bot in Slack.
-```
+Replace the placeholder values with your actual keys. Claude Code will run the commands, verify the setup, and troubleshoot any issues.
 
 ---
 
-## Deploy to Vercel Sandbox
+## Deploy to AWS (Recommended)
 
-Run your agent on [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox). No AWS account, no VMs to manage. The agent runs in an isolated Firecracker microVM with snapshot-based persistence.
+The best way to run Proactive Engineer is on a dedicated VM that stays on 24/7. We provide Terraform configs and a pre-built AMI so the agent is running within a minute of `terraform apply`.
 
-### Quick Start
-
-```bash
-cd vercel-sandbox/
-npm install
-
-# Connect to Vercel
-vercel link
-vercel env pull
-
-# Add your API keys to .env.local (see .env.example)
-# Then deploy:
-npm run deploy
-```
-
-The deploy script spins up a microVM, installs OpenClaw and the agent, connects to your Slack and GitHub, takes a snapshot, and deploys a keepalive cron that restarts the agent every 5 hours. Everything is automatic.
-
-### Keeping it running
-
-The deploy script sets up a Vercel Cron Job that restarts the agent from the latest snapshot every 5 hours. Memory, config, and session history are all preserved across restarts. It picks up exactly where it left off. No manual steps needed.
-
----
-
-## Deploy to AWS
-
-If you want the agent on a dedicated EC2 instance that runs 24/7, we include Terraform configs and a pre-built AMI. The agent is running within a minute of `terraform apply`.
+### One-Shot Deploy
 
 ```bash
 cd terraform/
 
 # Copy the example and fill in your keys
 cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your Slack, GitHub, and Gemini keys
 
 # Deploy
 terraform init
 terraform apply
 ```
 
-Terraform provisions the VM from a pre-built AMI (Node.js, OpenClaw, and the skill are already installed), injects your API keys, and starts the agent automatically. No SSH required.
+That's it. Terraform provisions the VM from a pre-built AMI (Node.js, OpenClaw, and the skill are already installed), injects your API keys, and starts the agent automatically. No SSH required.
+
+After about 30 seconds, the agent connects to Slack and starts its first heartbeat cycle.
 
 To check on it:
 
 ```bash
+# SSH in (if you provided an SSH key)
 ssh ubuntu@$(terraform output -raw public_ip)
+
+# Check the agent
 export PATH="$HOME/.npm-global/bin:$PATH"
 openclaw --profile pe-default gateway status
+journalctl --user -u openclaw-gateway-pe-default -f
 ```
 
-To build your own AMI (for example, in a different region):
+### Build Your Own AMI
+
+If you want to build the AMI yourself (e.g. for a different region):
 
 ```bash
 cd packer/
+
 packer init proactive-engineer.pkr.hcl
-packer build -var "vpc_id=vpc-xxx" -var "subnet_id=subnet-xxx" proactive-engineer.pkr.hcl
+
+packer build \
+  -var "vpc_id=vpc-xxx" \
+  -var "subnet_id=subnet-xxx" \
+  proactive-engineer.pkr.hcl
 ```
 
-To tear down:
+Then set `ami_id` in your `terraform.tfvars` to the new AMI ID.
+
+### Tear Down
 
 ```bash
 cd terraform/
@@ -173,15 +143,73 @@ terraform destroy
 
 ---
 
+## Deploy to Vercel Sandbox
+
+No AWS account needed. Vercel Sandbox runs your agent in an isolated microVM with automatic snapshot-based persistence.
+
+### How It Works
+
+Vercel Sandbox VMs have a ~5 hour timeout. To keep the agent running 24/7, the deploy script creates a **snapshot** of the fully-configured agent. A Vercel Cron Job restarts the agent from the snapshot every 5 hours — the agent's memory, config, and session history are preserved across restarts.
+
+### Quick Start
+
+```bash
+cd vercel-sandbox/
+
+# Install dependencies
+npm install
+
+# Link to a Vercel project (creates one if needed)
+vercel link
+
+# Pull the OIDC token (creates .env.local with VERCEL_OIDC_TOKEN)
+vercel env pull
+
+# Add your keys to .env.local (append to the file vercel created)
+# See .env.example for the full list:
+#   SLACK_APP_TOKEN, SLACK_BOT_TOKEN, GITHUB_APP_ID,
+#   GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PEM, GEMINI_API_KEY
+
+# First-time deploy: creates sandbox, installs everything, takes snapshot
+npm run deploy
+```
+
+After deploy completes, it outputs a **Snapshot ID**. The agent is already running.
+
+### Keep It Alive (Cron)
+
+Deploy the keepalive cron to Vercel so the agent auto-restarts before each timeout:
+
+```bash
+# Set the snapshot ID and cron secret as Vercel env vars
+vercel env add SNAPSHOT_ID    # paste the snapshot ID from deploy output
+vercel env add CRON_SECRET    # any random string for auth
+
+# Deploy the cron endpoint
+vercel deploy --prod
+```
+
+The cron runs every 5 hours, boots a new sandbox from the latest snapshot, and starts the agent.
+
+### Manual Restart
+
+If you need to restart manually:
+
+```bash
+SNAPSHOT_ID=snap_... npm run keepalive
+```
+
+---
+
 ## What It Does
 
-Every 30 minutes, the agent checks in on your project and asks itself: what's the most useful thing I could do right now?
+Every 30 minutes, Proactive Engineer checks in on your project and asks itself: *what's the most useful thing I could do right now?*
 
-1. **Scan** - reads your Slack channels and GitHub repos to understand what's going on
-2. **Reason** - thinks through what it could help with: bug fixes, missing tests, documentation, dependency updates, CI improvements, scaffolding ideas people have been talking about
-3. **Prioritize** - picks the thing that's actually worth doing. High impact, low risk, not something someone else is already working on
-4. **Execute** - does the work. Opens a branch, writes the code, submits a PR
-5. **Communicate** - posts a short summary in Slack so your team knows what happened
+1. **Scan** — Reads across your Slack channels and GitHub repos to understand what's going on
+2. **Reason** — Thinks through what it could help with: bug fixes, missing tests, documentation, dependency updates, CI improvements, scaffolding ideas people have been talking about
+3. **Prioritize** — Picks the thing that's actually worth doing — high impact, low risk, not something someone else is already working on
+4. **Execute** — Does the work. Opens a branch, writes the code, submits a PR
+5. **Communicate** — Posts a short summary in Slack so your team knows what happened
 
 ```
 ⚡ [proactive-engineer] Added missing error handling to /api/payments
@@ -195,11 +223,11 @@ Your team reviews and merges (or closes) the PR. Over time, the agent learns wha
 
 ## Daily Digest
 
-Every day at 9:00 AM, the agent posts a transparency report to `#proactive-engineer`:
+Every day at **9:00 AM** (via a cron job registered during install), the agent posts a transparency report to `#proactive-engineer`:
 
-- What it did (PRs opened, with one-line summaries)
-- What it considered but skipped, and why (e.g. "someone is actively working on that file")
-- What it's watching (conversations and issues it's tracking for later)
+- **What it did** — PRs opened, with one-line summaries
+- **What it considered but skipped** — and why (e.g. "someone is actively working on that file")
+- **What it's watching** — conversations and issues it's tracking
 
 ---
 
@@ -223,9 +251,9 @@ GEMINI_API_KEY=... \
   curl -fsSL https://proactive.engineer/install.sh | bash
 ```
 
-Each agent runs as a separate profile with its own service, workspace, and session history. All agents share the same Slack app and GitHub token but appear with different names in Slack.
+Each agent runs as a separate OpenClaw profile with its own systemd service, workspace, and session history. All agents share the same Slack app and GitHub token — they appear with different names in Slack via the `chat:write.customize` scope.
 
-Agents coordinate through public Slack channels. Before starting work, each agent posts what it's about to do in `#proactive-engineer` so others don't step on each other.
+Agents coordinate through public Slack channels. Before starting work, each agent posts what it's about to do in `#proactive-engineer` so others don't duplicate effort.
 
 ```
 Machine
@@ -235,7 +263,7 @@ Machine
   +-- Agent "infra"     (port 18809, Slack: "PE - Infra")
 ```
 
-Manage individual agents:
+Manage individual agents using the profile flag:
 
 ```bash
 openclaw --profile pe-backend gateway status
@@ -247,11 +275,59 @@ openclaw --profile pe-infra dashboard
 
 ## Guardrails
 
-- **$50/day API budget** - pauses and asks in Slack before going over
-- **Never pushes to main** - always works on branches and opens PRs for human review
-- **Never deploys** - its job ends at the PR. Your team decides what ships.
-- **No large refactors without buy-in** - opens issues and asks first
-- **Doesn't touch active work** - checks recent commits and open PRs before starting
+The agent is designed to be helpful without getting in the way:
+
+- **$50/day API budget** — pauses and asks in Slack before exceeding
+- **Never pushes to main** — always works on branches and opens PRs for human review
+- **Never deploys** — its job ends at the PR. Your team decides what ships.
+- **No large refactors without buy-in** — opens issues and asks first
+- **Doesn't touch active work** — checks recent commits and open PRs before starting
+
+---
+
+## Configuration
+
+Each agent's config lives at `~/.openclaw-pe-<name>/openclaw.json`. The install script writes this for you:
+
+```json
+{
+  "gateway": {
+    "port": 18789
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "~/.openclaw/workspace-pe-backend",
+      "heartbeat": { "every": "30m" }
+    }
+  },
+  "channels": {
+    "slack": {
+      "enabled": true,
+      "appToken": "xapp-...",
+      "botToken": "xoxb-..."
+    }
+  },
+  "skills": {
+    "entries": {
+      "proactive-engineer": {
+        "enabled": true,
+        "env": {
+          "GITHUB_TOKEN": "ghp_...",
+          "GEMINI_API_KEY": "...",
+          "AGENT_NAME": "backend",
+          "AGENT_DISPLAY_NAME": "PE - Backend"
+        }
+      }
+    }
+  }
+}
+```
+
+Restart after changing config:
+
+```bash
+openclaw --profile pe-<name> gateway restart
+```
 
 ---
 
@@ -259,11 +335,11 @@ openclaw --profile pe-infra dashboard
 
 ### Slack Bot (2 tokens needed)
 
-You need a Bot Token (`xoxb-...`) and an App Token (`xapp-...`).
+You need a **Bot Token** (`xoxb-...`) and an **App Token** (`xapp-...`).
 
-1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App** > **From an app manifest**
+1. Go to [api.slack.com/apps](https://api.slack.com/apps) and click **Create New App** → **From an app manifest**
 2. Select your workspace
-3. Paste this manifest:
+3. Paste this manifest (sets up all permissions, events, and socket mode automatically):
 
 ```json
 {
@@ -322,58 +398,138 @@ You need a Bot Token (`xoxb-...`) and an App Token (`xapp-...`).
 }
 ```
 
-4. Click **Next** > **Create**
-5. Go to **Basic Information** > **App-Level Tokens** > **Generate Token and Scopes**
+4. Click **Next** → **Create**
+
+**Get your two tokens:**
+
+5. Go to **Basic Information** → **App-Level Tokens** → **Generate Token and Scopes**
 6. Name it anything, add the scope `connections:write`, click **Generate**
-7. Copy the **App Token** (starts with `xapp-`)
-8. Go to **Install App** > **Install to Workspace** > **Allow**
-9. Copy the **Bot User OAuth Token** (starts with `xoxb-`)
-10. In Slack, invite the bot to your channels: `/invite @Proactive Engineer`
+7. Copy the **App Token** — starts with `xapp-`
+8. Go to **Install App** (left sidebar) → **Install to Workspace** → **Allow**
+9. Copy the **Bot User OAuth Token** — starts with `xoxb-`
 
-### GitHub App (recommended)
+**Invite the bot to your channels:**
 
-A GitHub App gives the agent its own identity. Commits and PRs show as "Proactive Engineer[bot]" instead of your personal account.
+10. In Slack, invite the bot: `/invite @Proactive Engineer`
 
-1. Go to [github.com/settings/apps](https://github.com/settings/apps) > **New GitHub App**
-2. Name it and set the homepage URL to `https://proactive.engineer`
-3. Uncheck **Active** under Webhook
-4. Under **Repository permissions**, set Contents, Pull requests, and Issues to Read and write
+### GitHub App (Recommended)
+
+A GitHub App gives the agent its own identity — commits and PRs show as "Proactive Engineer[bot]" instead of your personal account.
+
+1. Go to [github.com/settings/apps](https://github.com/settings/apps) → **New GitHub App**
+2. Fill in the name ("Proactive Engineer") and homepage URL ("https://proactive.engineer")
+3. Uncheck **Active** under Webhook (we don't need webhooks)
+4. Under **Repository permissions**, set:
+   - **Contents**: Read and write
+   - **Pull requests**: Read and write
+   - **Issues**: Read and write
+   - **Metadata**: Read-only (auto-selected)
 5. Click **Create GitHub App**
-6. Copy the **App ID** from the app page
-7. Under **Private keys**, click **Generate a private key** and save the `.pem` file
-8. Go to **Install App** > install on your account/org > select repos
-9. Copy the **Installation ID** from the URL after installing
+6. On the app page, note the **App ID**
+7. Scroll down to **Private keys** → **Generate a private key** → save the `.pem` file
+8. Go to **Install App** (left sidebar) → install it on your account/org → select the repos you want the agent to access
+9. After installing, note the **Installation ID** from the URL: `github.com/settings/installations/INSTALLATION_ID`
+
+You'll need three values: **App ID**, **Installation ID**, and the **path to the .pem file**.
 
 ### Alternative: GitHub Personal Access Token
 
-Simpler to set up, but commits show as your personal account.
+If you prefer simplicity over bot identity (commits will show as your account):
 
 1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
-2. Generate a new token with `repo` scope
-3. Copy the token (starts with `ghp_`)
+2. Click **Generate new token** → **Fine-grained token** (recommended) or **Classic**
+3. For classic tokens, select the `repo` scope
+4. Copy the token — starts with `ghp_`
 
 ### Gemini API Key
 
 1. Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-2. Create an API key
-3. Copy it
+2. Click **Create API Key**
+3. Select or create a Google Cloud project
+4. Copy the key
 
-### Keys summary
+---
+
+### Required Keys Summary
 
 | Key | Format | Where to get it |
 | --- | --- | --- |
-| Slack App Token | `xapp-...` | api.slack.com/apps > Socket Mode > App-Level Tokens |
-| Slack Bot Token | `xoxb-...` | api.slack.com/apps > OAuth & Permissions |
-| GitHub App ID | numeric | github.com/settings/apps > your app |
-| GitHub Installation ID | numeric | github.com/settings/installations > your app > URL |
-| GitHub Private Key | `.pem` file | github.com/settings/apps > your app > Private keys |
+| Slack App Token | `xapp-...` | api.slack.com/apps → Socket Mode → App-Level Tokens |
+| Slack Bot Token | `xoxb-...` | api.slack.com/apps → OAuth & Permissions |
+| GitHub App ID | numeric | github.com/settings/apps → your app |
+| GitHub Installation ID | numeric | github.com/settings/installations → your app → URL |
+| GitHub Private Key | `.pem` file | github.com/settings/apps → your app → Private keys |
 | Gemini API Key | `AI...` | aistudio.google.com/apikey |
+
+*Or, if using a PAT instead of a GitHub App:*
+
+| Key | Format | Where to get it |
+| --- | --- | --- |
+| GitHub Token | `ghp_...` | github.com/settings/tokens |
+
+### Optional Environment Variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `AGENT_NAME` | `default` | Short identifier for this agent (used in profile/service names) |
+| `AGENT_DISPLAY_NAME` | `Proactive Engineer` | How this agent appears in Slack messages |
+
+---
+
+## Dashboard Access (Tailscale)
+
+The agent runs on a VM, but you can access its web dashboard from any of your devices using [Tailscale](https://tailscale.com/) — a zero-config mesh VPN.
+
+**On the VM:**
+
+1. Install Tailscale:
+   ```bash
+   curl -fsSL https://tailscale.com/install.sh | sh
+   sudo tailscale up
+   ```
+
+2. Add Tailscale config to your agent's `openclaw.json`:
+   ```json
+   {
+     "gateway": {
+       "auth": {
+         "allowTailscale": true
+       },
+       "tailscale": {
+         "mode": "serve"
+       }
+     }
+   }
+   ```
+
+3. Restart the agent:
+   ```bash
+   openclaw --profile pe-<name> gateway restart
+   ```
+
+**On your laptop/phone:**
+
+Install Tailscale, join the same Tailnet, and open the dashboard at `http://<vm-tailscale-hostname>:18789`. No port forwarding, no SSH tunnels — just works from any device on your Tailnet, fully encrypted.
 
 ---
 
 ## Engineering Standard
 
-The agent operates against a defined [engineering competency framework](skills/proactive-engineer/competencies/software_engineer_competency.md) that covers code quality, systems architecture, ownership, strategic judgment, and cross-team influence. You can customize it to match your team's values.
+Proactive Engineer doesn't just do random chores. It operates against a defined [engineering competency framework](skills/proactive-engineer/competencies/software_engineer_competency.md) that covers everything from code quality and systems architecture to ownership, strategic judgment, and cross-team influence. The agent reads this competency framework on every cycle and holds itself to the behavioral profile described there: act before being asked, identify systemic issues, optimize for organizational health, reduce entropy across systems, and make the people around it more effective.
+
+You can customize this framework to match your team's values by editing the competency file.
+
+---
+
+## Useful Commands
+
+```bash
+openclaw --profile pe-<name> gateway status       # Is the agent running?
+openclaw --profile pe-<name> skills list           # Is the skill loaded?
+openclaw --profile pe-<name> gateway restart       # Restart after config changes
+openclaw --profile pe-<name> dashboard             # Open the web UI
+journalctl --user -u openclaw-gateway-pe-<name> -f # Watch logs
+```
 
 ---
 
@@ -384,7 +540,7 @@ skills/
   proactive-engineer/
     SKILL.md                              # Agent behavior definition
     workspace/
-      HEARTBEAT.md                        # 30-min scan loop
+      HEARTBEAT.md                        # 30-min scan loop instructions
       IDENTITY.md                         # Agent name and vibe
       SOUL.md                             # Persona, boundaries, tone
       AGENTS.md                           # Operating instructions
@@ -396,16 +552,29 @@ scripts/
     gh                                    # gh wrapper (auto-injects App token)
     git-credential-github-app.sh          # Git credential helper
 terraform/                                # AWS EC2 deployment
+  main.tf
+  variables.tf
+  outputs.tf
+  user-data.sh
+  terraform.tfvars.example
 packer/                                   # Pre-built AMI
+  proactive-engineer.pkr.hcl
+  provision.sh
+  configure-agent.sh
 vercel-sandbox/                           # Vercel Sandbox deployment
-install.sh                                # One-command setup
+  deploy.ts                               # First-time setup + snapshot
+  keepalive.ts                            # Snapshot-based restart (local)
+  api/keepalive.ts                        # Cron endpoint (Vercel serverless)
+  vercel.json                             # Cron schedule
+install.sh                                # One-command setup (supports named agents)
+TESTING.md                                # How to verify it works
 ```
 
 ---
 
 ## Built On
 
-Proactive Engineer is built on [OpenClaw](https://openclaw.ai/), an open-source AI assistant framework. This repo is a fork of OpenClaw with the proactive-engineer skill and deployment tooling added.
+Proactive Engineer is built on [OpenClaw](https://openclaw.ai/), an open-source personal AI assistant framework. This repo is a fork of OpenClaw with the proactive-engineer skill and tooling added.
 
 ---
 
