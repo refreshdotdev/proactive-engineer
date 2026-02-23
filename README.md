@@ -159,15 +159,16 @@ cd vercel-sandbox/
 # Install dependencies
 npm install
 
-# Copy env template and fill in your keys
-cp .env.example .env.local
-# Edit .env.local with your Slack, GitHub, and Gemini keys
-
 # Link to a Vercel project (creates one if needed)
 vercel link
 
-# Pull Vercel auth token
+# Pull the OIDC token (creates .env.local with VERCEL_OIDC_TOKEN)
 vercel env pull
+
+# Add your keys to .env.local (append to the file vercel created)
+# See .env.example for the full list:
+#   SLACK_APP_TOKEN, SLACK_BOT_TOKEN, GITHUB_APP_ID,
+#   GITHUB_APP_INSTALLATION_ID, GITHUB_APP_PEM, GEMINI_API_KEY
 
 # First-time deploy: creates sandbox, installs everything, takes snapshot
 npm run deploy
