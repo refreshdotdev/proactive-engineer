@@ -1,5 +1,13 @@
 # proactive.engineer
 
+<p align="center">
+  <img src="proactive-engineer-hero.png" alt="Proactive Engineer" width="600">
+</p>
+
+<p align="center">
+  <em>An AI that ships while you sleep</em>
+</p>
+
 An open-source AI agent that lives on a server alongside your team. It connects to your Slack and GitHub, looks at everything going on, figures out what's worth doing, and opens PRs for your team to review. You stay in control. It just makes sure the backlog of "we should really do that" actually gets done.
 
 **[proactive.engineer](https://proactive.engineer)** / **[GitHub](https://github.com/refreshdotdev/proactive-engineer)**
