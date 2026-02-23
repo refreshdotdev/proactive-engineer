@@ -77,6 +77,31 @@ GEMINI_API_KEY="..." \
 
 Replace the placeholders with your actual keys. Claude Code will run the commands, verify the setup, and troubleshoot if anything goes wrong.
 
+For **Vercel Sandbox deployment**, use this prompt instead:
+
+```
+I need you to deploy Proactive Engineer to Vercel Sandbox.
+Clone https://github.com/refreshdotdev/proactive-engineer and go to the vercel-sandbox/ directory.
+
+Run: npm install && vercel link && vercel env pull
+
+Then add these keys to .env.local (append after the VERCEL_OIDC_TOKEN line):
+
+SLACK_APP_TOKEN=xapp-...
+SLACK_BOT_TOKEN=xoxb-...
+GITHUB_APP_ID=...
+GITHUB_APP_INSTALLATION_ID=...
+GITHUB_APP_PEM="-----BEGIN RSA PRIVATE KEY-----
+...paste .pem contents...
+-----END RSA PRIVATE KEY-----"
+GEMINI_API_KEY=...
+
+Then run: npm run deploy
+
+Verify the agent is running by checking the deploy output for "Snapshot created"
+and messaging the Proactive Engineer bot in Slack.
+```
+
 ---
 
 ## Deploy to Vercel Sandbox
