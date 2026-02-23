@@ -46,7 +46,23 @@ After that, walk away. The agent is alive.
 
 ## Setup with Claude Code
 
-The easiest way to get started: paste this prompt into [Claude Code](https://docs.anthropic.com/en/docs/claude-code) on a fresh VM. Claude will handle the entire setup for you.
+The easiest way to get started: paste one of the prompts below into [Claude Code](https://docs.anthropic.com/en/docs/claude-code) and it will handle the entire setup for you. You just need to provide your API keys.
+
+### Where to get your keys
+
+| Key | Where to get it |
+| --- | --- |
+| **Slack App Token** (`xapp-...`) | [api.slack.com/apps](https://api.slack.com/apps) > create app from manifest (see [full instructions](#slack-bot-2-tokens-needed) below) > Basic Information > App-Level Tokens |
+| **Slack Bot Token** (`xoxb-...`) | Same app > Install App > Bot User OAuth Token |
+| **GitHub App ID** | [github.com/settings/apps](https://github.com/settings/apps) > create app (see [full instructions](#github-app-recommended) below) > App ID on the app page |
+| **GitHub Installation ID** | Same app > Install App > install on your account > ID in the URL |
+| **GitHub Private Key** (`.pem`) | Same app > Private keys > Generate a private key |
+| **Gemini API Key** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) > Create API Key |
+| **Vercel Token** (for Vercel deploy) | [vercel.com/account/tokens](https://vercel.com/account/tokens) > Create Token |
+
+Full step-by-step setup for each key is in the [Setting Up Your Keys](#setting-up-your-keys) section below.
+
+### Direct install prompt (any machine)
 
 ```
 I need you to set up Proactive Engineer (https://github.com/refreshdotdev/proactive-engineer)
@@ -81,7 +97,7 @@ GEMINI_API_KEY="..." \
 
 Replace the placeholder values with your actual keys. Claude Code will run the commands, verify the setup, and troubleshoot any issues.
 
-For **Vercel Sandbox deployment**, use this prompt instead:
+### Vercel Sandbox prompt (no VM needed)
 
 ```
 I need you to deploy Proactive Engineer to Vercel Sandbox.
@@ -109,8 +125,6 @@ Steps:
 6. Verify the agent is running by checking the deploy output for "Snapshot created"
    and messaging the Proactive Engineer bot in Slack.
 ```
-
-You can get a Vercel token at [vercel.com/account/tokens](https://vercel.com/account/tokens).
 
 ---
 
