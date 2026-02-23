@@ -143,6 +143,63 @@ terraform destroy
 
 ---
 
+## Deploy to Vercel Sandbox
+
+No AWS account needed. Vercel Sandbox runs your agent in an isolated microVM with automatic snapshot-based persistence.
+
+### How It Works
+
+Vercel Sandbox VMs have a ~5 hour timeout. To keep the agent running 24/7, the deploy script creates a **snapshot** of the fully-configured agent. A Vercel Cron Job restarts the agent from the snapshot every 5 hours — the agent's memory, config, and session history are preserved across restarts.
+
+### Quick Start
+
+```bash
+cd vercel-sandbox/
+
+# Install dependencies
+npm install
+
+# Copy env template and fill in your keys
+cp .env.example .env.local
+# Edit .env.local with your Slack, GitHub, and Gemini keys
+
+# Link to a Vercel project (creates one if needed)
+vercel link
+
+# Pull Vercel auth token
+vercel env pull
+
+# First-time deploy: creates sandbox, installs everything, takes snapshot
+npm run deploy
+```
+
+After deploy completes, it outputs a **Snapshot ID**. The agent is already running.
+
+### Keep It Alive (Cron)
+
+Deploy the keepalive cron to Vercel so the agent auto-restarts before each timeout:
+
+```bash
+# Set the snapshot ID and cron secret as Vercel env vars
+vercel env add SNAPSHOT_ID    # paste the snapshot ID from deploy output
+vercel env add CRON_SECRET    # any random string for auth
+
+# Deploy the cron endpoint
+vercel deploy --prod
+```
+
+The cron runs every 5 hours, boots a new sandbox from the latest snapshot, and starts the agent.
+
+### Manual Restart
+
+If you need to restart manually:
+
+```bash
+SNAPSHOT_ID=snap_... npm run keepalive
+```
+
+---
+
 ## What It Does
 
 Every 30 minutes, Proactive Engineer checks in on your project and asks itself: *what's the most useful thing I could do right now?*
@@ -488,6 +545,11 @@ skills/
       AGENTS.md                           # Operating instructions
     competencies/
       software_engineer_competency.md     # Engineering standard
+scripts/
+  refresh-github-token.sh                 # GitHub App token refresh
+  bin/
+    gh                                    # gh wrapper (auto-injects App token)
+    git-credential-github-app.sh          # Git credential helper
 terraform/                                # AWS EC2 deployment
   main.tf
   variables.tf
@@ -498,6 +560,11 @@ packer/                                   # Pre-built AMI
   proactive-engineer.pkr.hcl
   provision.sh
   configure-agent.sh
+vercel-sandbox/                           # Vercel Sandbox deployment
+  deploy.ts                               # First-time setup + snapshot
+  keepalive.ts                            # Snapshot-based restart (local)
+  api/keepalive.ts                        # Cron endpoint (Vercel serverless)
+  vercel.json                             # Cron schedule
 install.sh                                # One-command setup (supports named agents)
 TESTING.md                                # How to verify it works
 ```
