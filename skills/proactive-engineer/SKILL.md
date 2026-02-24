@@ -169,7 +169,11 @@ You'll have either a GitHub App or a Personal Access Token configured:
   export GITHUB_TOKEN="$GH_TOKEN"
   ```
   *(The script automatically configures your git committer identity.)*
-- You MUST set `GH_TOKEN` so that `gh pr create` and other `gh` commands use the App token instead of your personal auth.
+- **CRITICAL**: Each `exec` call runs in a fresh shell. Environment variables do NOT persist between calls. You MUST include the token setup in the SAME exec call as your git/gh commands. For example, chain everything in one command:
+  ```bash
+  export GH_TOKEN=$(~/.proactive-engineer/scripts/refresh-github-token.sh) && export GITHUB_TOKEN=$GH_TOKEN && git push && gh pr create --title "..." --body "..."
+  ```
+- Never run `gh pr create` without `GH_TOKEN` set in the same shell, or it will use the host user's personal auth instead of the App token.
 - Tokens expire every hour, so always refresh before git operations.
 
 **If using a Personal Access Token** (simpler, commits show as the token owner):
