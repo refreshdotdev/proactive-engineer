@@ -190,7 +190,7 @@ terraform destroy
 
 ## Deploy to Vercel Sandbox
 
-No AWS account needed. Vercel Sandbox runs your agent in an isolated microVM with automatic snapshot-based persistence.
+Vercel Sandbox runs your agent in an isolated microVM with automatic snapshot-based persistence.
 
 ### How It Works
 
