@@ -39,22 +39,24 @@ async function main() {
     'cd ~/.proactive-engineer && git pull --quiet origin main 2>/dev/null || true',
   ]);
 
+  console.log("Cleaning up stale state from snapshot...");
+  await sandbox.runCommand("bash", [
+    "-c",
+    "pkill -f 'openclaw.*gateway' 2>/dev/null; sleep 1; rm -f /tmp/openclaw-1000/gateway.*.lock /tmp/openclaw-pe-default.log; rm -rf /tmp/openclaw",
+  ]);
+
   console.log("Starting gateway...");
   await sandbox.runCommand("bash", [
     "-c",
-    [
-      'export PATH="$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/.proactive-engineer/scripts/bin:$PATH"',
-      "nohup openclaw --profile pe-default gateway --port 18789 > /tmp/openclaw-pe-default.log 2>&1 &",
-      "disown",
-    ].join(" && "),
+    'export PATH="$HOME/.global/npm/bin:$HOME/.npm-global/bin:$HOME/.local/bin:$HOME/.proactive-engineer/scripts/bin:$PATH"; nohup openclaw --profile pe-default gateway --port 18789 > /tmp/openclaw-pe-default.log 2>&1 & disown',
   ]);
 
   console.log("Waiting for gateway to start...");
-  await new Promise((r) => setTimeout(r, 10000));
+  await new Promise((r) => setTimeout(r, 15000));
 
   const check = await sandbox.runCommand("bash", [
     "-c",
-    "tail -5 /tmp/openclaw-pe-default.log 2>/dev/null || echo 'No logs yet'",
+    "cat /tmp/openclaw-pe-default.log 2>/dev/null || echo 'No logs yet'",
   ]);
   console.log(await check.stdout());
 
