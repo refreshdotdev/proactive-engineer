@@ -37,6 +37,15 @@ else
   exit 1
 fi
 
+# Configure branch protection (best-effort, non-fatal)
+if [ -f "$INSTALL_DIR/scripts/configure-branch-protection.sh" ]; then
+  GITHUB_APP_ID="${GITHUB_APP_ID:-}" \
+  GITHUB_APP_INSTALLATION_ID="${GITHUB_APP_INSTALLATION_ID:-}" \
+  GITHUB_APP_PEM_PATH="${GITHUB_APP_PEM_PATH:-}" \
+  GITHUB_TOKEN="${GITHUB_TOKEN:-}" \
+    bash "$INSTALL_DIR/scripts/configure-branch-protection.sh" 2>&1 || true
+fi
+
 # Symlink skill
 mkdir -p "$(dirname "$SKILL_DIR")"
 [ -L "$SKILL_DIR" ] && rm "$SKILL_DIR"
@@ -48,6 +57,13 @@ mkdir -p "$CONFIG_DIR" "$WORKSPACE_DIR"
 for f in HEARTBEAT.md IDENTITY.md SOUL.md AGENTS.md; do
   ln -sf "$INSTALL_DIR/skills/proactive-engineer/workspace/$f" "$WORKSPACE_DIR/$f" 2>/dev/null || true
 done
+
+# Determine skill env block (conditionally include RESTRICT_TO_CHANNEL)
+SKILL_ENV_EXTRA=""
+if [ -n "${RESTRICT_TO_CHANNEL:-}" ]; then
+  SKILL_ENV_EXTRA=",
+          \"RESTRICT_TO_CHANNEL\": \"${RESTRICT_TO_CHANNEL}\""
+fi
 
 # Write config
 cat > "$CONFIG_DIR/openclaw.json" << CONF
@@ -85,7 +101,7 @@ cat > "$CONFIG_DIR/openclaw.json" << CONF
         "enabled": true,
         "env": {
           "AGENT_NAME": "$AGENT_NAME",
-          "AGENT_DISPLAY_NAME": "$AGENT_DISPLAY_NAME"
+          "AGENT_DISPLAY_NAME": "$AGENT_DISPLAY_NAME"${SKILL_ENV_EXTRA}
         }
       }
     }

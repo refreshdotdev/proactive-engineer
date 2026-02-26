@@ -330,6 +330,51 @@ The agent is designed to be helpful without getting in the way:
 
 ---
 
+## Branch Protection
+
+During install, the agent offers to configure GitHub branch protection on your repos. This ensures the bot cannot merge its own PRs — all merges require at least one human approval.
+
+The install script configures:
+- **Required pull request reviews**: 1 approval minimum
+- **Dismiss stale reviews**: new pushes invalidate old approvals
+- **Applied to**: the default branch (main/master)
+
+Existing protection rules are preserved — the script only adds review requirements if they are missing or weaker than 1 approval.
+
+### Manual Setup
+
+If you skipped this during install, or need to configure it for new repos:
+
+```bash
+# Using GitHub App credentials:
+GITHUB_APP_ID=... \
+GITHUB_APP_INSTALLATION_ID=... \
+GITHUB_APP_PEM_PATH=~/github-app.pem \
+  bash ~/.proactive-engineer/scripts/configure-branch-protection.sh
+
+# Using a PAT:
+GITHUB_TOKEN=ghp_... \
+  bash ~/.proactive-engineer/scripts/configure-branch-protection.sh
+
+# Dry run (show what would change without applying):
+BRANCH_PROTECTION_DRY_RUN=yes \
+GITHUB_TOKEN=ghp_... \
+  bash ~/.proactive-engineer/scripts/configure-branch-protection.sh
+```
+
+### For Existing GitHub App Installations
+
+If you created your GitHub App before this feature was added, you need to grant the **Administration** permission:
+
+1. Go to [github.com/settings/apps](https://github.com/settings/apps) → your app
+2. Click **Permissions & events**
+3. Under **Repository permissions**, set **Administration** to **Read and write**
+4. Click **Save changes**
+5. Each org/account where the app is installed will need to approve the new permission (GitHub sends a notification to org admins)
+6. Re-run the install script or the standalone script above
+
+---
+
 ## Configuration
 
 Each agent's config lives at `~/.openclaw-pe-<name>/openclaw.json`. The install script writes this for you:
@@ -472,6 +517,7 @@ A GitHub App gives the agent its own identity — commits and PRs show as "Proac
 2. Fill in the name ("Proactive Engineer") and homepage URL ("https://proactive.engineer")
 3. Uncheck **Active** under Webhook (we don't need webhooks)
 4. Under **Repository permissions**, set:
+   - **Administration**: Read and write _(enables branch protection setup)_
    - **Contents**: Read and write
    - **Pull requests**: Read and write
    - **Issues**: Read and write
@@ -600,6 +646,7 @@ skills/
     competencies/
       software_engineer_competency.md     # Engineering standard
 scripts/
+  configure-branch-protection.sh          # Branch protection setup
   refresh-github-token.sh                 # GitHub App token refresh
   bin/
     gh                                    # gh wrapper (auto-injects App token)

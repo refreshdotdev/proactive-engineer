@@ -178,6 +178,27 @@ prompt_key "GEMINI_API_KEY" \
   "From aistudio.google.com/apikey"
 
 echo ""
+echo -e "${YELLOW}━━━ Channel Restriction (optional) ━━━━━━━━━━━━━━${NC}"
+
+RESTRICT_TO_CHANNEL="${RESTRICT_TO_CHANNEL:-}"
+
+if [ -z "$RESTRICT_TO_CHANNEL" ]; then
+  echo ""
+  echo -e "  ${CYAN}Restrict to a single Slack channel?${NC} ${DIM}(optional)${NC}"
+  echo -e "  ${DIM}Leave blank to monitor all channels the bot is in.${NC}"
+  echo -n "  > "
+  read -r RESTRICT_TO_CHANNEL
+fi
+
+if [ -n "$RESTRICT_TO_CHANNEL" ]; then
+  # Strip leading # if present
+  RESTRICT_TO_CHANNEL="${RESTRICT_TO_CHANNEL#\#}"
+  ok "Channel restriction: #${RESTRICT_TO_CHANNEL}"
+else
+  info "No channel restriction — agent will monitor all channels it's in."
+fi
+
+echo ""
 ok "All keys collected."
 
 # ── Install OpenClaw ───────────────────────────────────────────
@@ -231,6 +252,45 @@ if [ "$USE_GITHUB_APP" = "yes" ] && [ -n "${GITHUB_APP_PEM_PATH:-}" ]; then
   if [ -f "$INSTALL_DIR/scripts/upload-github-app-logo.sh" ]; then
     GITHUB_APP_ID="$GITHUB_APP_ID" GITHUB_APP_PEM_PATH="$PEM_DEST" \
       bash "$INSTALL_DIR/scripts/upload-github-app-logo.sh" 2>/dev/null || true
+  fi
+fi
+
+# ── Branch Protection (optional) ──────────────────────────────
+
+SETUP_BRANCH_PROTECTION="${SETUP_BRANCH_PROTECTION:-}"
+
+if [ -z "$SETUP_BRANCH_PROTECTION" ]; then
+  echo ""
+  echo -e "  ${CYAN}Configure branch protection on your repos?${NC}"
+  echo -e "  ${DIM}Prevents the bot from merging its own PRs by requiring human review.${NC}"
+  echo -e "  ${DIM}Recommended. You can do this manually later — see the README.${NC}"
+  echo -n "  [Y/n] > "
+  read -r SETUP_BRANCH_PROTECTION
+fi
+
+if [[ "$SETUP_BRANCH_PROTECTION" =~ ^[Nn] ]]; then
+  info "Skipping branch protection. See README for manual setup."
+else
+  echo ""
+  echo -e "${YELLOW}━━━ Configuring Branch Protection ━━━━━━━━━━━━━━━${NC}"
+  echo ""
+
+  if [ -f "$INSTALL_DIR/scripts/configure-branch-protection.sh" ]; then
+    if [ "$USE_GITHUB_APP" = "yes" ]; then
+      GITHUB_APP_ID="$GITHUB_APP_ID" \
+      GITHUB_APP_INSTALLATION_ID="$GITHUB_APP_INSTALLATION_ID" \
+      GITHUB_APP_PEM_PATH="$GITHUB_APP_PEM_PATH" \
+        bash "$INSTALL_DIR/scripts/configure-branch-protection.sh" \
+        && ok "Branch protection configured." \
+        || warn "Could not configure branch protection. See README for manual setup."
+    else
+      GITHUB_TOKEN="$GITHUB_TOKEN" \
+        bash "$INSTALL_DIR/scripts/configure-branch-protection.sh" \
+        && ok "Branch protection configured." \
+        || warn "Could not configure branch protection. See README for manual setup."
+    fi
+  else
+    warn "Branch protection script not found. Update proactive-engineer and re-run."
   fi
 fi
 
@@ -320,6 +380,13 @@ else
   GITHUB_ENV_BLOCK="\"GITHUB_TOKEN\": \"${GITHUB_TOKEN}\""
 fi
 
+# Determine skill env block (conditionally include RESTRICT_TO_CHANNEL)
+SKILL_ENV_EXTRA=""
+if [ -n "$RESTRICT_TO_CHANNEL" ]; then
+  SKILL_ENV_EXTRA=",
+          \"RESTRICT_TO_CHANNEL\": \"${RESTRICT_TO_CHANNEL}\""
+fi
+
 cat > "$CONFIG_FILE" <<CONF
 {
   "gateway": {
@@ -359,7 +426,7 @@ cat > "$CONFIG_FILE" <<CONF
         "enabled": true,
         "env": {
           "AGENT_NAME": "${AGENT_NAME}",
-          "AGENT_DISPLAY_NAME": "${AGENT_DISPLAY_NAME}"
+          "AGENT_DISPLAY_NAME": "${AGENT_DISPLAY_NAME}"${SKILL_ENV_EXTRA}
         }
       }
     }
@@ -397,11 +464,16 @@ fi
 # ── Register daily digest cron ─────────────────────────────────
 
 info "Registering daily digest cron job..."
+if [ -n "$RESTRICT_TO_CHANNEL" ]; then
+  DIGEST_CHANNEL="#${RESTRICT_TO_CHANNEL}"
+else
+  DIGEST_CHANNEL="#proactive-engineer"
+fi
 openclaw --profile "$PROFILE_NAME" cron add \
   --name "daily-digest-${AGENT_NAME}" \
   --cron "0 9 * * *" \
   --session isolated \
-  --message "Post your daily digest to #proactive-engineer. Include: (1) What you did today (PRs with one-line summaries), (2) What you considered but chose not to do and why, (3) What you're watching. Post as '${AGENT_DISPLAY_NAME}'." \
+  --message "Post your daily digest to ${DIGEST_CHANNEL}. Include: (1) What you did today (PRs with one-line summaries), (2) What you considered but chose not to do and why, (3) What you're watching. Post as '${AGENT_DISPLAY_NAME}'." \
   2>/dev/null || warn "Could not register daily digest cron (may need gateway running first)."
 ok "Daily digest scheduled for 9am."
 

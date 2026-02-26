@@ -7,6 +7,7 @@
   "redirect_url": "",
   "public": false,
   "default_permissions": {
+    "administration": "write",
     "contents": "write",
     "pull_requests": "write",
     "issues": "write",
