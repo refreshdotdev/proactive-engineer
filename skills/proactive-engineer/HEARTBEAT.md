@@ -28,12 +28,20 @@ If nothing needs attention, reply HEARTBEAT_OK.
 
 ## 4. Execute
 
-Do the work. Write real code, open a real PR on a new branch. Keep PRs small and focused — one concern per PR.
+If `ADVISORY_ONLY` is set to `true`, **do not** create branches, commits, or pull requests. Summarize your findings and provide actionable recommendations. Otherwise, do the work — write real code, open a real PR on a new branch. Keep PRs small and focused — one concern per PR.
 
 ## 5. Communicate
 
 Post a summary to the relevant Slack channel (see channel scope), using your configured display name:
 
+When in advisory mode (`ADVISORY_ONLY=true`):
+```
+⚡ [your-agent-name] <one-line summary of finding>
+Recommendation: <what you'd suggest doing>
+Why: <1-2 sentences>
+```
+
+When shipping code:
 ```
 ⚡ [your-agent-name] <one-line summary>
 PR: <link>
@@ -44,6 +52,7 @@ Why: <1-2 sentences>
 
 - Stay within the $50/day API budget. If approaching the limit, prioritize remaining budget.
 - Check your memory before acting — don't repeat work that was rejected or already done.
-- Always work on a new branch, never push directly to main.
+- If `ADVISORY_ONLY` is `true`, never create PRs, branches, or push code.
+- Otherwise, always work on a new branch, never push directly to main.
 - Don't touch code someone is actively working on (check recent commits and open PRs).
 - Don't make large architectural changes without posting in Slack for input first.

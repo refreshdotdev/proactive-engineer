@@ -58,11 +58,24 @@ for f in HEARTBEAT.md IDENTITY.md SOUL.md AGENTS.md; do
   ln -sf "$INSTALL_DIR/skills/proactive-engineer/workspace/$f" "$WORKSPACE_DIR/$f" 2>/dev/null || true
 done
 
-# Determine skill env block (conditionally include RESTRICT_TO_CHANNEL)
+# Determine skill env extras
 SKILL_ENV_EXTRA=""
 if [ -n "${RESTRICT_TO_CHANNEL:-}" ]; then
-  SKILL_ENV_EXTRA=",
+  SKILL_ENV_EXTRA="${SKILL_ENV_EXTRA},
           \"RESTRICT_TO_CHANNEL\": \"${RESTRICT_TO_CHANNEL}\""
+fi
+if [ -n "${ADVISORY_ONLY:-}" ]; then
+  SKILL_ENV_EXTRA="${SKILL_ENV_EXTRA},
+          \"ADVISORY_ONLY\": \"${ADVISORY_ONLY}\""
+fi
+
+# Determine Slack channels config
+if [ -n "${RESTRICT_TO_CHANNEL:-}" ]; then
+  SLACK_CHANNELS_BLOCK="\"${RESTRICT_TO_CHANNEL}\": { \"allow\": true, \"requireMention\": false }"
+  SLACK_GROUP_POLICY="allowlist"
+else
+  SLACK_CHANNELS_BLOCK="\"*\": { \"requireMention\": true }"
+  SLACK_GROUP_POLICY="open"
 fi
 
 # Write config
@@ -89,8 +102,8 @@ cat > "$CONFIG_DIR/openclaw.json" << CONF
       "enabled": true,
       "appToken": "$SLACK_APP_TOKEN",
       "botToken": "$SLACK_BOT_TOKEN",
-      "groupPolicy": "open",
-      "channels": { "*": { "requireMention": true } },
+      "groupPolicy": "$SLACK_GROUP_POLICY",
+      "channels": { $SLACK_CHANNELS_BLOCK },
       "dmPolicy": "open",
       "allowFrom": ["*"]
     }

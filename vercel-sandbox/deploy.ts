@@ -30,6 +30,8 @@ async function main() {
   const githubAppInstallationId = process.env.GITHUB_APP_INSTALLATION_ID || "";
   const githubAppPem = process.env.GITHUB_APP_PEM || "";
   const githubToken = process.env.GITHUB_TOKEN || "";
+  const restrictToChannel = process.env.RESTRICT_TO_CHANNEL || "";
+  const advisoryOnly = process.env.ADVISORY_ONLY || "";
 
   console.log("Creating sandbox...");
   const sandbox = await Sandbox.create({ timeout: FIVE_HOURS });
@@ -93,6 +95,8 @@ async function main() {
       ? `GITHUB_APP_PEM_PATH="$HOME/.proactive-engineer/github-app.pem"`
       : "",
     githubToken ? `GITHUB_TOKEN="${githubToken}"` : "",
+    restrictToChannel ? `RESTRICT_TO_CHANNEL="${restrictToChannel}"` : "",
+    advisoryOnly ? `ADVISORY_ONLY="${advisoryOnly}"` : "",
   ]
     .filter(Boolean)
     .join(" ");
