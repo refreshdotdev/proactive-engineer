@@ -4,7 +4,7 @@ config({ path: ".env.local" });
 import { Sandbox } from "@vercel/sandbox";
 import { writeFileSync, readFileSync, existsSync } from "fs";
 
-const SANDBOX_TIMEOUT = 45 * 60 * 1000; // 45 minutes (Hobby plan max)
+const SANDBOX_TIMEOUT = 5 * 60 * 60 * 1000; // 5 hours (Pro plan)
 const REPO = "https://github.com/refreshdotdev/proactive-engineer.git";
 const STATE_FILE = ".sandbox-state.json";
 

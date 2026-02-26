@@ -1,6 +1,6 @@
 import { Sandbox } from "@vercel/sandbox";
 
-const SANDBOX_TIMEOUT = 45 * 60 * 1000; // 45 minutes (Hobby plan max)
+const SANDBOX_TIMEOUT = 5 * 60 * 60 * 1000; // 5 hours (Pro plan)
 
 export const maxDuration = 300; // 5 minutes for the cron handler itself
 

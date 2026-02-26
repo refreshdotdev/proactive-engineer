@@ -128,66 +128,6 @@ Steps:
 
 ---
 
-## Deploy to AWS (Recommended)
-
-The best way to run Proactive Engineer is on a dedicated VM that stays on 24/7. We provide Terraform configs and a pre-built AMI so the agent is running within a minute of `terraform apply`.
-
-### One-Shot Deploy
-
-```bash
-cd terraform/
-
-# Copy the example and fill in your keys
-cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your Slack, GitHub, and Gemini keys
-
-# Deploy
-terraform init
-terraform apply
-```
-
-That's it. Terraform provisions the VM from a pre-built AMI (Node.js, OpenClaw, and the skill are already installed), injects your API keys, and starts the agent automatically. No SSH required.
-
-After about 30 seconds, the agent connects to Slack and starts its first heartbeat cycle.
-
-To check on it:
-
-```bash
-# SSH in (if you provided an SSH key)
-ssh ubuntu@$(terraform output -raw public_ip)
-
-# Check the agent
-export PATH="$HOME/.npm-global/bin:$PATH"
-openclaw --profile pe-default gateway status
-journalctl --user -u openclaw-gateway-pe-default -f
-```
-
-### Build Your Own AMI
-
-If you want to build the AMI yourself (e.g. for a different region):
-
-```bash
-cd packer/
-
-packer init proactive-engineer.pkr.hcl
-
-packer build \
-  -var "vpc_id=vpc-xxx" \
-  -var "subnet_id=subnet-xxx" \
-  proactive-engineer.pkr.hcl
-```
-
-Then set `ami_id` in your `terraform.tfvars` to the new AMI ID.
-
-### Tear Down
-
-```bash
-cd terraform/
-terraform destroy
-```
-
----
-
 ## Deploy to Vercel Sandbox
 
 Vercel Sandbox runs your agent in an isolated microVM with automatic snapshot-based persistence.
@@ -675,6 +615,66 @@ TESTING.md                                # How to verify it works
 ## Built On
 
 Proactive Engineer is built on [OpenClaw](https://openclaw.ai/), an open-source personal AI assistant framework. This repo is a fork of OpenClaw with the proactive-engineer skill and tooling added.
+
+---
+
+## Deploy to AWS
+
+Run Proactive Engineer on a dedicated VM that stays on 24/7. We provide Terraform configs and a pre-built AMI so the agent is running within a minute of `terraform apply`.
+
+### One-Shot Deploy
+
+```bash
+cd terraform/
+
+# Copy the example and fill in your keys
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your Slack, GitHub, and Gemini keys
+
+# Deploy
+terraform init
+terraform apply
+```
+
+That's it. Terraform provisions the VM from a pre-built AMI (Node.js, OpenClaw, and the skill are already installed), injects your API keys, and starts the agent automatically. No SSH required.
+
+After about 30 seconds, the agent connects to Slack and starts its first heartbeat cycle.
+
+To check on it:
+
+```bash
+# SSH in (if you provided an SSH key)
+ssh ubuntu@$(terraform output -raw public_ip)
+
+# Check the agent
+export PATH="$HOME/.npm-global/bin:$PATH"
+openclaw --profile pe-default gateway status
+journalctl --user -u openclaw-gateway-pe-default -f
+```
+
+### Build Your Own AMI
+
+If you want to build the AMI yourself (e.g. for a different region):
+
+```bash
+cd packer/
+
+packer init proactive-engineer.pkr.hcl
+
+packer build \
+  -var "vpc_id=vpc-xxx" \
+  -var "subnet_id=subnet-xxx" \
+  proactive-engineer.pkr.hcl
+```
+
+Then set `ami_id` in your `terraform.tfvars` to the new AMI ID.
+
+### Tear Down
+
+```bash
+cd terraform/
+terraform destroy
+```
 
 ---
 

@@ -4,8 +4,8 @@ config({ path: ".env.local" });
 import { Sandbox } from "@vercel/sandbox";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 
-const SANDBOX_TIMEOUT = 45 * 60 * 1000; // 45 minutes (Hobby plan max)
-const SNAPSHOT_BEFORE_TIMEOUT = 40 * 60 * 1000; // snapshot at 40 minutes
+const SANDBOX_TIMEOUT = 5 * 60 * 60 * 1000; // 5 hours (Pro plan)
+const SNAPSHOT_BEFORE_TIMEOUT = 4.5 * 60 * 60 * 1000; // snapshot at 4.5 hours
 const STATE_FILE = ".sandbox-state.json";
 
 function getSnapshotId(): string {
