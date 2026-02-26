@@ -1,6 +1,6 @@
 import { Sandbox } from "@vercel/sandbox";
 
-const FIVE_HOURS = 5 * 60 * 60 * 1000;
+const SANDBOX_TIMEOUT = 45 * 60 * 1000; // 45 minutes (Hobby plan max)
 
 export const maxDuration = 300; // 5 minutes for the cron handler itself
 
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
 
     const sandbox = await Sandbox.create({
       source: { type: "snapshot", snapshotId },
-      timeout: FIVE_HOURS,
+      timeout: SANDBOX_TIMEOUT,
     });
 
     await sandbox.runCommand("bash", [
@@ -57,7 +57,7 @@ export async function GET(request: Request) {
       sandboxId: sandbox.sandboxId,
       snapshotId,
       gatewayIndicators: logOutput.trim(),
-      message: `Agent resumed from snapshot. Running for ~5 hours until next cron cycle.`,
+      message: `Agent resumed from snapshot. Running for ~45 minutes until sandbox timeout.`,
     });
   } catch (err) {
     console.error("Keepalive error:", err);

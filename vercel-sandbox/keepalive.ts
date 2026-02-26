@@ -4,8 +4,8 @@ config({ path: ".env.local" });
 import { Sandbox } from "@vercel/sandbox";
 import { readFileSync, writeFileSync, existsSync } from "fs";
 
-const FIVE_HOURS = 5 * 60 * 60 * 1000;
-const FOUR_AND_HALF_HOURS = 4.5 * 60 * 60 * 1000;
+const SANDBOX_TIMEOUT = 45 * 60 * 1000; // 45 minutes (Hobby plan max)
+const SNAPSHOT_BEFORE_TIMEOUT = 40 * 60 * 1000; // snapshot at 40 minutes
 const STATE_FILE = ".sandbox-state.json";
 
 function getSnapshotId(): string {
@@ -29,7 +29,7 @@ async function main() {
 
   const sandbox = await Sandbox.create({
     source: { type: "snapshot", snapshotId },
-    timeout: FIVE_HOURS,
+    timeout: SANDBOX_TIMEOUT,
   });
   console.log(`Sandbox created: ${sandbox.sandboxId}`);
 
@@ -59,9 +59,9 @@ async function main() {
   console.log(await check.stdout());
 
   console.log(
-    `Agent running. Will snapshot in ${FOUR_AND_HALF_HOURS / 1000 / 60 / 60} hours...`
+    `Agent running. Will snapshot in ${SNAPSHOT_BEFORE_TIMEOUT / 1000 / 60} minutes...`
   );
-  await new Promise((r) => setTimeout(r, FOUR_AND_HALF_HOURS));
+  await new Promise((r) => setTimeout(r, SNAPSHOT_BEFORE_TIMEOUT));
 
   console.log("Creating snapshot before timeout...");
   const newSnapshot = await sandbox.snapshot({ expiration: 0 });

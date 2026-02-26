@@ -4,7 +4,7 @@ config({ path: ".env.local" });
 import { Sandbox } from "@vercel/sandbox";
 import { writeFileSync, readFileSync, existsSync } from "fs";
 
-const FIVE_HOURS = 5 * 60 * 60 * 1000;
+const SANDBOX_TIMEOUT = 45 * 60 * 1000; // 45 minutes (Hobby plan max)
 const REPO = "https://github.com/refreshdotdev/proactive-engineer.git";
 const STATE_FILE = ".sandbox-state.json";
 
@@ -34,7 +34,7 @@ async function main() {
   const advisoryOnly = process.env.ADVISORY_ONLY || "";
 
   console.log("Creating sandbox...");
-  const sandbox = await Sandbox.create({ timeout: FIVE_HOURS });
+  const sandbox = await Sandbox.create({ timeout: SANDBOX_TIMEOUT });
   console.log(`Sandbox created: ${sandbox.sandboxId}`);
 
   console.log("Installing OpenClaw...");
